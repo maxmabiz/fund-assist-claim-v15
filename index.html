@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fund · 收款流水辅助认领</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --card: #fff;
+      --line: #f0f0f0;
+      --line-strong: #d9d9d9;
+      --text: rgba(0, 0, 0, .88);
+      --text-2: rgba(0, 0, 0, .45);
+      --text-3: rgba(0, 0, 0, .25);
+      --primary: #1677ff;
+      --primary-hover: #4096ff;
+      --primary-bg: #e6f4ff;
+      --success: #52c41a;
+      --success-bg: #f6ffed;
+      --warning: #faad14;
+      --warning-bg: #fffbe6;
+      --error: #ff4d4f;
+      --header: 64px;
+      --sider: 260px;
+      --radius: 6px;
+      --font: 18px;
+      --font-sm: 16px;
+      --font-lg: 20px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: var(--font);
+      color: var(--text);
+      background: var(--bg);
+    }
+    input, select, button, textarea { font-family: inherit; font-size: inherit; }
+
+    .shell { min-height: 100vh; display: flex; }
+    .sider {
+      width: var(--sider);
+      flex-shrink: 0;
+      background: #001529;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand {
+      height: var(--header);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 20px;
+      font-weight: 700;
+      font-size: 22px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: var(--primary); color: #fff;
+      display: grid; place-items: center; font-size: 13px;
+    }
+    .menu { padding: 12px 8px; flex: 1; overflow: auto; }
+    .menu-group { color: rgba(255,255,255,.45); font-size: var(--font-sm); padding: 12px 12px 6px; }
+    .menu-item {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: rgba(255,255,255,.75);
+      height: 48px;
+      padding: 0 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--font);
+      text-align: left;
+    }
+    .menu-item:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .menu-item.active { color: #fff; background: var(--primary); }
+    .menu-foot { padding: 8px; border-top: 1px solid rgba(255,255,255,.08); }
+
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      height: var(--header);
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .top-actions { display: flex; align-items: center; gap: 4px; color: var(--text-2); }
+    .icon-btn {
+      width: 32px; height: 32px; border: 0; background: transparent;
+      border-radius: 6px; cursor: default; color: inherit;
+      display: grid; place-items: center;
+    }
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #adc6ff; color: #1d39c4;
+      display: grid; place-items: center; font-size: 12px; font-weight: 600; margin-left: 8px;
+    }
+
+    .page { padding: 16px 20px 24px; flex: 1; }
+    .crumb { color: var(--text-2); font-size: var(--font); margin-bottom: 12px; }
+    .crumb b { color: var(--text); font-weight: 500; }
+
+    .card {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 16px 16px 8px;
+      margin-bottom: 12px;
+    }
+    .table-card { padding: 12px 16px 16px; }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .filters input, .filters select, .field-control {
+      height: 40px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      padding: 0 11px;
+      min-width: 190px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+      font-size: var(--font);
+    }
+    .filters input::placeholder { color: #bfbfbf; }
+    .filters input:focus, .filters select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
+    .amount-pair { display: flex; align-items: center; gap: 6px; }
+    .amount-pair input { min-width: 132px; width: 132px; }
+    .amount-pair span { color: var(--text-3); }
+    .filter-actions { display: flex; gap: 8px; margin-left: auto; }
+    .filters-extra {
+      display: none;
+      width: 100%;
+      padding-top: 8px;
+      gap: 8px;
+    }
+    .filters.expanded .filters-extra { display: flex; }
+
+    .btn {
+      height: 40px; padding: 0 18px; border-radius: var(--radius);
+      border: 1px solid var(--line-strong); background: #fff; color: var(--text);
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: var(--font);
+    }
+    .btn:hover { color: var(--primary); border-color: var(--primary); }
+    .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+    .btn-text { border: 0; background: transparent; color: var(--primary); height: 40px; padding: 0 4px; cursor: pointer; font-size: var(--font); }
+    .btn-link { border: 0; background: transparent; color: var(--primary); padding: 0; cursor: pointer; font-size: var(--font); }
+    .btn-link:disabled { color: var(--text-3); cursor: not-allowed; }
+    .btn-danger { background: var(--error); border-color: var(--error); color: #fff; }
+    .btn-danger:hover { filter: brightness(1.05); color: #fff; }
+
+    .platform-tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--line);
+      margin: 0 -16px 12px; padding: 0 16px; overflow-x: auto;
+    }
+    .platform-tab {
+      padding: 12px 16px; color: var(--text); border: 0; background: transparent;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; white-space: nowrap;
+      font-size: var(--font);
+    }
+    .platform-tab.active { color: var(--primary); font-weight: 500; border-bottom-color: var(--primary); }
+
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .status-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--line-strong);
+      background: #fff; cursor: pointer; font-size: var(--font-sm); color: var(--text-2);
+    }
+    .pill.active { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .toolbar-actions { display: flex; gap: 8px; margin-left: auto; }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 1480px; }
+    th, td {
+      padding: 14px 16px; border-bottom: 1px solid var(--line);
+      text-align: left; white-space: nowrap; font-size: var(--font); vertical-align: middle;
+    }
+    th { background: #fafafa; font-weight: 500; color: var(--text); }
+    tbody tr:hover { background: #fafafa; }
+    .amt { color: var(--success); font-variant-numeric: tabular-nums; }
+    .muted { color: var(--text-2); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: var(--font-sm); }
+
+    .tag {
+      display: inline-flex; align-items: center; height: 28px; padding: 0 10px;
+      border-radius: 4px; font-size: var(--font-sm); border: 1px solid transparent; white-space: nowrap;
+    }
+    .tag-blue { color: var(--primary); background: var(--primary-bg); border-color: #91caff; }
+    .tag-green { color: #389e0d; background: var(--success-bg); border-color: #b7eb8f; }
+    .tag-gray { color: var(--text-2); background: #fafafa; border-color: #d9d9d9; }
+
+    .rec { display: flex; flex-direction: column; gap: 2px; line-height: 1.3; }
+    .rec-main { color: var(--text); }
+    .rec-sub { color: var(--text-2); font-size: var(--font-sm); }
+    .conf-high { color: #389e0d; font-weight: 600; }
+    .conf-mid { color: #d48806; font-weight: 600; }
+    .conf-low { color: var(--text-2); }
+
+    .pager {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 12px; color: var(--text-2); font-size: var(--font-sm);
+    }
+    .pager-right { display: flex; align-items: center; gap: 8px; }
+    .page-btn {
+      min-width: 40px; height: 40px; border: 1px solid var(--line-strong);
+      background: #fff; border-radius: var(--radius); cursor: default;
+    }
+    .page-btn.active { color: var(--primary); border-color: var(--primary); }
+
+    .mask {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: none; align-items: center; justify-content: center; z-index: 50; padding: 24px;
+    }
+    .mask.show { display: flex; }
+    .page-head-tab {
+      display: flex;
+      border-bottom: 1px solid var(--line);
+      margin: 0 0 16px;
+    }
+    .page-head-tab span {
+      padding: 0 4px 12px;
+      color: var(--primary);
+      font-weight: 500;
+      border-bottom: 2px solid var(--primary);
+      margin-bottom: -1px;
+    }
+
+    .page-card { padding: 16px 20px 16px; }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px 16px;
+      align-items: end;
+      padding-bottom: 16px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--line);
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .field label { color: var(--text); line-height: 1.4; }
+    .field input, .field select {
+      width: 100%; min-width: 0; height: 40px;
+      border: 1px solid var(--line-strong); border-radius: var(--radius);
+      padding: 0 11px; outline: none; background: #fff; color: var(--text);
+    }
+    .field input:focus, .field select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
+    .field-actions {
+      flex-direction: row;
+      justify-content: flex-end;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .status-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .status-tab {
+      height: 36px; padding: 0 14px; border: 0; background: transparent;
+      color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .status-tab.active { color: var(--primary); font-weight: 500; border-bottom-color: var(--primary); }
+    .status-tab b { font-weight: 600; margin-left: 4px; }
+
+    .toolbar.fin-toolbar {
+      align-items: flex-end;
+      border-bottom: 1px solid var(--line);
+      margin: 8px 0 0;
+      padding-bottom: 0;
+    }
+
+    .fin-table { min-width: 1720px; }
+    .fin-table th, .fin-table td { padding: 12px 12px; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .col-txn {
+      max-width: 280px; overflow: hidden; text-overflow: ellipsis;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: var(--font-sm);
+    }
+    .col-rec { min-width: 168px; max-width: 220px; white-space: normal; }
+    .col-sticky {
+      position: sticky; right: 0; background: #fff;
+      box-shadow: -8px 0 8px -8px rgba(0,0,0,.12);
+    }
+    th.col-sticky { background: #fafafa; }
+    tbody tr:hover .col-sticky { background: #fafafa; }
+
+    .modal {
+      width: 560px; max-width: calc(100vw - 48px); background: #fff; border-radius: 8px;
+      box-shadow: 0 6px 16px rgba(0,0,0,.08), 0 3px 6px rgba(0,0,0,.12);
+      max-height: calc(100vh - 64px); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .modal.wide { width: 760px; }
+    .modal-h {
+      padding: 16px 24px; font-size: var(--font-lg); font-weight: 600;
+      border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0;
+    }
+    .modal-b { padding: 20px 24px; overflow: auto; flex: 1; }
+    .modal-f {
+      padding: 12px 24px 16px; display: flex; justify-content: flex-end; gap: 8px;
+      border-top: 1px solid var(--line); flex-shrink: 0; background: #fff;
+    }
+    .x {
+      width: 32px; height: 32px; border: 0; background: transparent;
+      font-size: 22px; line-height: 1; cursor: pointer; color: var(--text-2); border-radius: 6px;
+    }
+    .x:hover { background: #f5f5f5; color: var(--text); }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 96px 1fr 96px 1fr;
+      gap: 10px 16px;
+      background: #fafafa;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: var(--font);
+    }
+    .summary .k { color: var(--text-2); }
+    .summary .v { min-width: 0; word-break: break-all; line-height: 1.45; }
+    .form-row { margin-bottom: 16px; }
+    .form-row label { display: block; margin-bottom: 6px; }
+    .req::before { content: "*"; color: var(--error); margin-right: 4px; }
+    .form-row input, .form-row select, .form-row textarea {
+      width: 100%; height: 40px; border: 1px solid var(--line-strong); border-radius: var(--radius);
+      padding: 0 11px; outline: none; font-size: var(--font);
+    }
+    .form-row input:focus, .form-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
+    .alert {
+      padding: 12px 14px; border-radius: 6px; margin-bottom: 16px; font-size: var(--font); line-height: 1.65;
+      border: 1px solid transparent;
+    }
+    .alert-info { background: var(--primary-bg); border-color: #91caff; color: var(--text); }
+    .alert-warn { background: var(--warning-bg); border-color: #ffe58f; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .form-grid .form-row { margin-bottom: 0; }
+    .steps { margin: 8px 0 0; padding-left: 22px; line-height: 1.8; }
+    .detail-list { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .detail-row {
+      display: grid; grid-template-columns: 120px 1fr;
+      border-bottom: 1px solid var(--line); min-height: 48px;
+    }
+    .detail-row:last-child { border-bottom: 0; }
+    .detail-row .k { background: #fafafa; color: var(--text-2); padding: 12px 16px; display: flex; align-items: center; }
+    .detail-row .v { padding: 12px 16px; display: flex; align-items: center; min-width: 0; word-break: break-all; }
+
+    .rec-card {
+      border: 1px solid #91caff; background: #f0f7ff; border-radius: 8px;
+      padding: 14px 16px; margin-bottom: 16px;
+    }
+    .rec-card.mid { border-color: #ffe58f; background: var(--warning-bg); }
+    .rec-card.none { border-color: var(--line-strong); background: #fafafa; }
+    .rec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .rec-title { font-weight: 600; }
+    .rec-meta { display: grid; grid-template-columns: 108px 1fr; gap: 6px 12px; line-height: 1.5; }
+    .rec-meta .k { color: var(--text-2); }
+    .reason { margin: 8px 0 0; padding-left: 20px; color: var(--text); line-height: 1.65; }
+    .reason li { margin: 4px 0; }
+    .reason-label { margin-top: 10px; color: var(--text-2); }
+    .file {
+      border: 1px dashed var(--line-strong); border-radius: 6px; padding: 10px 12px;
+      color: var(--text-2); display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      min-height: 48px;
+    }
+    .file-item { color: var(--primary); }
+
+    @media (max-width: 1400px) {
+      .filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .summary { grid-template-columns: 96px 1fr; }
+    }
+
+    .toast {
+      position: fixed; top: 72px; left: calc(50% + 130px); transform: translateX(-50%);
+      font-size: var(--font);
+      background: rgba(0,0,0,.75); color: #fff; padding: 10px 16px; border-radius: 6px;
+      opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 80;
+    }
+    .toast.show { opacity: 1; }
+
+    .spec { max-width: 980px; }
+    .spec h2 { font-size: 24px; margin: 0 0 8px; }
+    .spec h3 { font-size: 20px; margin: 24px 0 8px; }
+    .spec p, .spec li { line-height: 1.7; color: var(--text); }
+    .spec .lead { color: var(--text-2); margin-bottom: 20px; }
+    .spec table { min-width: 0; background: #fff; }
+    .spec th, .spec td { white-space: normal; }
+    .keep { background: #fff; border-radius: 8px; padding: 20px 24px; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sider">
+      <div class="brand"><span class="brand-mark">F</span> Fund</div>
+      <nav class="menu">
+        <div class="menu-group">业务入账</div>
+        <button class="menu-item active" data-view="biz">收款明细</button>
+        <div class="menu-group">公司业务</div>
+        <button class="menu-item" data-view="fin">收款流水</button>
+      </nav>
+      <div class="menu-foot">
+        <button class="menu-item" data-view="spec">设计说明</button>
+      </div>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <div class="top-actions">
+          <button class="icon-btn" title="搜索">⌕</button>
+          <button class="icon-btn" title="设置">⚙</button>
+          <button class="icon-btn" title="主题">☾</button>
+          <button class="icon-btn" title="通知">◉</button>
+          <div class="avatar">业</div>
+        </div>
+      </header>
+      <main class="page" id="app"></main>
+    </div>
+  </div>
+  <div class="mask" id="mask"></div>
+  <div class="toast" id="toast"></div>
+
+<script>
+const BIZ_LINES = ["广告", "代发", "商城", "其他"];
+const MERCHANTS = [
+  { id: "14229", name: "星辰出海-广告主账户", line: "广告" },
+  { id: "3639", name: "万里汇零售测试中", line: "商城" },
+  { id: "88021", name: "迅达供应链-代发账户", line: "代发" },
+  { id: "55210", name: "北辰广告-欧洲账户", line: "广告" },
+  { id: "71008", name: "华贸商城-主账户", line: "商城" },
+  { id: "22617", name: "远航支付-美国账户", line: "其他" },
+];
+
+const PLATFORMS = ["Wise", "Airwallex", "Payoneer", "Worldfirst", "PingPong", "Others", "HSBC USD (Swift)", "Bank Wise EUR (SEPA)"];
+
+let view = "biz";
+let bizPlatform = "Airwallex";
+let finStatusFilter = "unclaimed";
+let bizExpanded = false;
+let finExpanded = false;
+let activeId = null;
+let pendingOverwriteId = null;
+
+const txns = [
+  {
+    id: "a1",
+    platform: "Airwallex",
+    alias: "airwallex-muxue-real",
+    entity: "666",
+    type: "-",
+    subType: "-",
+    txnNo: "2c3e6e7e-7a3c-41d7-8c12-0a91c8e11a01",
+    time: "2026-08-06 09:35:51",
+    currency: "USD",
+    amount: 320.00,
+    received: 320.00,
+    fee: 0,
+    payerName: "SHENZHEN STARLINK E-COMMERCE CO LTD",
+    payerAccount: "GB29NWBK60161331926819",
+    method: "-",
+    customerName: "",
+    customerCode: "",
+    merchantId: "",
+    merchantName: "",
+    bizLine: "",
+    status: "unclaimed",
+    attachments: [],
+    financeClaim: null,
+    rec: {
+      level: "high",
+      confidence: 98,
+      bizLine: "广告",
+      merchantId: "14229",
+      merchantName: "星辰出海-广告主账户",
+      reasons: [
+        "付款账号 GB29NWBK60161331926819：历史 100 次中 98 次认领至 星辰出海-广告主账户",
+        "付款人名称与该商户历史付款人一致",
+        "收款账户 airwallex-muxue-real + USD 历史主要入该商户"
+      ]
+    }
+  },
+  {
+    id: "a2",
+    platform: "Airwallex",
+    alias: "airwallex-muxue-real",
+    entity: "666",
+    type: "-",
+    subType: "-",
+    txnNo: "9f1b22aa-44d0-4b8e-91c0-77c1d2aa0012",
+    time: "2026-08-05 18:12:03",
+    currency: "USD",
+    amount: 2000.00,
+    received: 2000.00,
+    fee: 0,
+    payerName: "NORTHSTAR MEDIA LIMITED",
+    payerAccount: "DE89370400440532013000",
+    method: "-",
+    customerName: "星辰出海-广告主账户",
+    customerCode: "SC-AD-001",
+    merchantId: "14229",
+    merchantName: "星辰出海-广告主账户",
+    bizLine: "广告",
+    status: "finance",
+    attachments: ["财务辅助认领-水单.pdf"],
+    financeClaim: {
+      operator: "张财务",
+      time: "2026-08-15 10:12:03",
+      bizLine: "广告",
+      merchantId: "14229",
+      merchantName: "星辰出海-广告主账户"
+    },
+    rec: {
+      level: "high",
+      confidence: 96,
+      bizLine: "广告",
+      merchantId: "14229",
+      merchantName: "星辰出海-广告主账户",
+      reasons: [
+        "付款账号 DE89370400440532013000：历史 80 次中 77 次认领至 星辰出海-广告主账户",
+        "Reference 含商户代码 SC-AD-001"
+      ]
+    }
+  },
+  {
+    id: "a3",
+    platform: "Airwallex",
+    alias: "airwallex-muxue-real",
+    entity: "666",
+    type: "-",
+    subType: "-",
+    txnNo: "c80d11e2-12ab-4f20-a111-55e0cc900031",
+    time: "2026-08-04 21:44:10",
+    currency: "EUR",
+    amount: 860.50,
+    received: 860.50,
+    fee: 0,
+    payerName: "EURO BUYER GMBH",
+    payerAccount: "FR7630006000011234567890189",
+    method: "-",
+    customerName: "",
+    customerCode: "",
+    merchantId: "",
+    merchantName: "",
+    bizLine: "",
+    status: "unclaimed",
+    attachments: [],
+    financeClaim: null,
+    rec: {
+      level: "mid",
+      confidence: 72,
+      bizLine: "广告",
+      merchantId: "55210",
+      merchantName: "北辰广告-欧洲账户",
+      reasons: [
+        "付款人名称 EURO BUYER GMBH 历史 18 次中 13 次认领至 北辰广告-欧洲账户",
+        "收款币种 EUR + 主体 666 对该商户有倾向，但付款账号为新账号"
+      ]
+    }
+  },
+  {
+    id: "a4",
+    platform: "Airwallex",
+    alias: "airwallex-muxue-real",
+    entity: "666",
+    type: "-",
+    subType: "-",
+    txnNo: "e21aa09c-88c1-4aa2-b333-0144dd200044",
+    time: "2026-08-04 09:35:51",
+    currency: "USD",
+    amount: 6000.00,
+    received: 6000.00,
+    fee: 0,
+    payerName: "-",
+    payerAccount: "-",
+    method: "-",
+    customerName: "",
+    customerCode: "",
+    merchantId: "",
+    merchantName: "",
+    bizLine: "",
+    status: "unclaimed",
+    attachments: [],
+    financeClaim: null,
+    rec: null
+  },
+  {
+    id: "w1",
+    platform: "Worldfirst",
+    alias: "wf-retail-01",
+    entity: "万里汇零售测试中",
+    type: "-",
+    subType: "-",
+    txnNo: "WF20260804001",
+    time: "2026-08-04 11:02:18",
+    currency: "CNH",
+    amount: 12800.00,
+    received: 12740.00,
+    fee: 60.00,
+    payerName: "杭州某贸易有限公司",
+    payerAccount: "6222021000001234567",
+    method: "银行转账",
+    customerName: "万里汇零售测试中",
+    customerCode: "WF-RT-009",
+    merchantId: "3639",
+    merchantName: "万里汇零售测试中",
+    bizLine: "商城",
+    status: "business",
+    attachments: ["业务认领附件.png"],
+    financeClaim: null,
+    rec: {
+      level: "high",
+      confidence: 99,
+      bizLine: "商城",
+      merchantId: "3639",
+      merchantName: "万里汇零售测试中",
+      reasons: ["付款账号历史 210 次全部认领至该商户"]
+    }
+  },
+  {
+    id: "a5",
+    platform: "Airwallex",
+    alias: "airwallex-muxue-real",
+    entity: "666",
+    type: "-",
+    subType: "-",
+    txnNo: "aa9011bb-33c0-4111-8888-777700000055",
+    time: "2026-08-03 16:08:22",
+    currency: "USD",
+    amount: 450.00,
+    received: 450.00,
+    fee: 0,
+    payerName: "AGENT DROP SHIP LTD",
+    payerAccount: "GB33BUKB20201555555555",
+    method: "-",
+    customerName: "迅达供应链-代发账户",
+    customerCode: "XD-DF-003",
+    merchantId: "88021",
+    merchantName: "迅达供应链-代发账户",
+    bizLine: "代发",
+    status: "finance",
+    attachments: ["代发到账截图.png"],
+    financeClaim: {
+      operator: "李财务",
+      time: "2026-08-14 17:40:11",
+      bizLine: "代发",
+      merchantId: "88021",
+      merchantName: "迅达供应链-代发账户"
+    },
+    rec: {
+      level: "high",
+      confidence: 94,
+      bizLine: "代发",
+      merchantId: "88021",
+      merchantName: "迅达供应链-代发账户",
+      reasons: [
+        "付款账号 GB33BUKB20201555555555：历史 50 次中 47 次认领至 迅达供应链-代发账户",
+        "备注含 DAIFA"
+      ]
+    }
+  },
+  {
+    id: "b1",
+    platform: "Airwallex",
+    alias: "airwallex-muxue-real",
+    entity: "666",
+    type: "-",
+    subType: "-",
+    txnNo: "aw-claimed-1001",
+    time: "2026-08-02 14:22:08",
+    currency: "USD",
+    amount: 15800.00,
+    received: 15800.00,
+    fee: 0,
+    payerName: "STARLINK ADS PTE LTD",
+    payerAccount: "GB12BARC20031847829415",
+    method: "Local Transfer",
+    customerName: "星辰出海-广告主账户",
+    customerCode: "SC-AD-001",
+    merchantId: "14229",
+    merchantName: "星辰出海-广告主账户",
+    bizLine: "广告",
+    status: "business",
+    attachments: ["业务认领-广告到账.pdf"],
+    financeClaim: null,
+    rec: null
+  },
+  {
+    id: "b2",
+    platform: "Payoneer",
+    alias: "payoneer-us-01",
+    entity: "华贸主体",
+    type: "-",
+    subType: "-",
+    txnNo: "PO-20260801-77821",
+    time: "2026-08-01 09:18:44",
+    currency: "USD",
+    amount: 3260.50,
+    received: 3198.00,
+    fee: 62.50,
+    payerName: "AMAZON PAYMENTS INC",
+    payerAccount: "US64SVBKUS6S3300958879",
+    method: "Payoneer",
+    customerName: "华贸商城-主账户",
+    customerCode: "HM-SC-008",
+    merchantId: "71008",
+    merchantName: "华贸商城-主账户",
+    bizLine: "商城",
+    status: "business",
+    attachments: ["业务认领-商城.xlsx"],
+    financeClaim: null,
+    rec: null
+  },
+  {
+    id: "b3",
+    platform: "Wise",
+    alias: "wise-eur-main",
+    entity: "北辰主体",
+    type: "-",
+    subType: "-",
+    txnNo: "WISE-TXN-889201",
+    time: "2026-07-30 16:41:02",
+    currency: "EUR",
+    amount: 940.00,
+    received: 928.60,
+    fee: 11.40,
+    payerName: "BERLIN MEDIA GMBH",
+    payerAccount: "DE12500105170648489890",
+    method: "SEPA",
+    customerName: "北辰广告-欧洲账户",
+    customerCode: "BC-EU-012",
+    merchantId: "55210",
+    merchantName: "北辰广告-欧洲账户",
+    bizLine: "广告",
+    status: "business",
+    attachments: ["业务认领-欧洲广告.pdf"],
+    financeClaim: null,
+    rec: null
+  },
+  {
+    id: "b4",
+    platform: "Worldfirst",
+    alias: "wf-us-02",
+    entity: "远航主体",
+    type: "-",
+    subType: "-",
+    txnNo: "WF20260729088",
+    time: "2026-07-29 11:05:19",
+    currency: "USD",
+    amount: 21000.00,
+    received: 20940.00,
+    fee: 60.00,
+    payerName: "NORTH AMERICA TRADE LLC",
+    payerAccount: "021000021123456789",
+    method: "ACH",
+    customerName: "远航支付-美国账户",
+    customerCode: "YH-US-004",
+    merchantId: "22617",
+    merchantName: "远航支付-美国账户",
+    bizLine: "其他",
+    status: "business",
+    attachments: ["业务认领-美国账户.png"],
+    financeClaim: null,
+    rec: null
+  }
+];
+
+function $(id) { return document.getElementById(id); }
+function money(n, ccy) {
+  const v = Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (ccy === "USD" || ccy === "EUR" ? "$ " : "$ ") + v;
+}
+function dash(v) { return v && v !== "-" ? v : '<span class="muted">-</span>'; }
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2200);
+}
+function closeMask() { $("mask").classList.remove("show"); $("mask").innerHTML = ""; }
+
+function statusTag(status, page) {
+  if (status === "finance") return '<span class="tag tag-blue">财务已辅助认领</span>';
+  if (status === "business") {
+    if (page === "fin") return '<span class="tag tag-green">已认领</span>';
+    return '<span class="muted">-</span>';
+  }
+  if (page === "fin") return '<span class="tag tag-gray">未认领</span>';
+  return '<span class="muted">-</span>';
+}
+
+function counts() {
+  return {
+    unclaimed: txns.filter(t => t.status === "unclaimed").length,
+    finance: txns.filter(t => t.status === "finance").length,
+    business: txns.filter(t => t.status === "business").length,
+    all: txns.length
+  };
+}
+
+function render() {
+  document.querySelectorAll(".menu-item").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.view === view);
+  });
+  document.querySelector(".avatar").textContent = view === "fin" ? "财" : "业";
+  if (view === "biz") renderBiz();
+  else if (view === "fin") renderFin();
+  else renderSpec();
+}
+
+function renderBiz() {
+  const rows = txns.filter(t => t.platform === bizPlatform);
+  $("app").innerHTML = `
+    <div class="crumb">Fund &nbsp;&gt;&nbsp; 业务入账 &nbsp;&gt;&nbsp; <b>收款明细</b></div>
+    <section class="card table-card">
+      <div class="platform-tabs">
+        ${PLATFORMS.map(p => `<button class="platform-tab ${p===bizPlatform?"active":""}" data-p="${p}">${p}</button>`).join("")}
+      </div>
+      <div class="filters ${bizExpanded ? "expanded" : ""}" id="bizFilters">
+        <select><option>账户别名</option><option>airwallex-muxue-real</option></select>
+        <select><option>主体名称</option><option>666</option></select>
+        <input value="2026-04-01 ~ 2026-08-31" style="min-width:220px" />
+        <input placeholder="交易ID" />
+        <div class="amount-pair">
+          <input placeholder="最小金额" />
+          <span>-</span>
+          <input placeholder="最大金额" />
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-primary">搜索</button>
+          <button class="btn">重置</button>
+          <button class="btn-text" id="bizExpand">${bizExpanded ? "收起" : "展开"}</button>
+        </div>
+        <div class="filters-extra">
+          <select><option>认领状态（全部）</option><option>未认领</option><option>财务已辅助认领</option></select>
+        </div>
+      </div>
+    </section>
+    <section class="card table-card">
+      <div class="toolbar">
+        <div></div>
+        <div class="toolbar-actions">
+          <button class="btn">手动上传Excel</button>
+          <button class="btn">下载Excel模版</button>
+          <button class="btn btn-primary">导出数据</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>支付平台</th><th>账户别名</th><th>主体名称</th><th>类型</th><th>二级类型</th>
+              <th>交易ID</th><th>交易时间(UTC+8)</th><th>币种</th><th>金额</th><th>手续费</th>
+              <th>付款方名称</th><th>付款方账号</th><th>认领状态</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(t => `
+              <tr>
+                <td>${t.platform}</td>
+                <td>${t.alias}</td>
+                <td>${t.entity}</td>
+                <td>${dash(t.type)}</td>
+                <td>${dash(t.subType)}</td>
+                <td class="mono">${t.txnNo}</td>
+                <td>${t.time}</td>
+                <td>${t.currency}</td>
+                <td class="amt">${Number(t.amount).toFixed(2)}</td>
+                <td>${Number(t.fee).toFixed(2)}</td>
+                <td>${dash(t.payerName)}</td>
+                <td>${dash(t.payerAccount)}</td>
+                <td>${statusTag(t.status, "biz")}</td>
+                <td><button class="btn-link" data-claim="${t.id}">一键认领</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <div>共 ${rows.length} 条记录<span class="muted">（演示数据；现网该渠道 153340 条）</span></div>
+        <div class="pager-right">
+          <select class="btn"><option>20条/页</option></select>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">›</button>
+        </div>
+      </div>
+    </section>
+  `;
+  document.querySelectorAll(".platform-tab").forEach(btn => {
+    btn.onclick = () => { bizPlatform = btn.dataset.p; render(); };
+  });
+  $("bizExpand").onclick = () => { bizExpanded = !bizExpanded; render(); };
+  document.querySelectorAll("[data-claim]").forEach(btn => {
+    btn.onclick = () => onBizClaim(btn.dataset.claim);
+  });
+}
+
+function renderFin() {
+  const c = counts();
+  const rows = txns.filter(t => {
+    if (finStatusFilter === "unclaimed") return t.status === "unclaimed";
+    if (finStatusFilter === "finance") return t.status === "finance";
+    if (finStatusFilter === "business") return t.status === "business";
+    return true;
+  });
+  $("app").innerHTML = `
+    <div class="crumb">Fund &nbsp;&gt;&nbsp; 公司业务 &nbsp;&gt;&nbsp; <b>收款流水</b></div>
+    <section class="card page-card">
+      <div class="page-head-tab"><span>收款流水</span></div>
+      <div class="filter-grid">
+        <div class="field"><label>客户代码</label><input placeholder="请输入" /></div>
+        <div class="field"><label>客户名称</label><input placeholder="请输入" /></div>
+        <div class="field">
+          <label>收款机构</label>
+          <select><option value="">全部</option><option>Airwallex</option><option>WorldFirst</option><option>Payoneer</option><option>Wise</option></select>
+        </div>
+        <div class="field">
+          <label>账号</label>
+          <select><option value="">全部</option><option>airwallex-muxue-real</option></select>
+        </div>
+        <div class="field">
+          <label>主体名称</label>
+          <select><option value="">全部</option><option>666</option></select>
+        </div>
+        <div class="field"><label>收款方式</label><input placeholder="请输入" /></div>
+        <div class="field">
+          <label>认领状态</label>
+          <select id="finStatusSelect">
+            <option value="unclaimed" ${finStatusFilter==="unclaimed"?"selected":""}>未认领</option>
+            <option value="finance" ${finStatusFilter==="finance"?"selected":""}>财务已辅助认领</option>
+            <option value="business" ${finStatusFilter==="business"?"selected":""}>已认领</option>
+            <option value="all" ${finStatusFilter==="all"?"selected":""}>全部</option>
+          </select>
+        </div>
+        <div class="field field-actions">
+          <button class="btn btn-primary">搜索</button>
+          <button class="btn">重置</button>
+        </div>
+      </div>
+      <div class="toolbar fin-toolbar">
+        <div class="status-tabs">
+          <button class="status-tab ${finStatusFilter==="unclaimed"?"active":""}" data-st="unclaimed">未认领<b>${c.unclaimed}</b></button>
+          <button class="status-tab ${finStatusFilter==="finance"?"active":""}" data-st="finance">财务已辅助认领<b>${c.finance}</b></button>
+          <button class="status-tab ${finStatusFilter==="business"?"active":""}" data-st="business">已认领<b>${c.business}</b></button>
+          <button class="status-tab ${finStatusFilter==="all"?"active":""}" data-st="all">全部<b>${c.all}</b></button>
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn btn-primary">导出数据</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="fin-table">
+          <thead>
+            <tr>
+              <th>主体名称</th><th>账号</th><th>收款机构</th><th>客户名称</th><th>客户代码</th>
+              <th>商户 ID</th><th>交易号</th><th>收款方式</th><th>交易时间</th><th>收款币种</th>
+              <th class="num">总额</th><th class="num">到账金额</th><th class="num">手续费</th>
+              <th>认领状态</th><th>推荐认领</th><th class="col-sticky">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(t => `
+              <tr>
+                <td>${t.entity}</td>
+                <td>${t.alias}</td>
+                <td>${t.platform}</td>
+                <td>${dash(t.customerName)}</td>
+                <td>${dash(t.customerCode)}</td>
+                <td>${dash(t.merchantId)}</td>
+                <td class="col-txn" title="${t.txnNo}">${t.txnNo}</td>
+                <td>${dash(t.method)}</td>
+                <td>${t.time}</td>
+                <td>${t.currency}</td>
+                <td class="amt num">${money(t.amount, t.currency)}</td>
+                <td class="amt num">${money(t.received, t.currency)}</td>
+                <td class="num">${money(t.fee, t.currency)}</td>
+                <td>${statusTag(t.status, "fin")}</td>
+                <td class="col-rec">${recCell(t)}</td>
+                <td class="col-sticky">${finAction(t)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <div>共 ${rows.length} 条记录</div>
+        <div class="pager-right">
+          <select class="btn"><option>70条/页</option></select>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">›</button>
+        </div>
+      </div>
+    </section>
+  `;
+  const sel = $("finStatusSelect");
+  if (sel) sel.onchange = () => { finStatusFilter = sel.value; render(); };
+  document.querySelectorAll(".status-tab").forEach(btn => {
+    btn.onclick = () => { finStatusFilter = btn.dataset.st; render(); };
+  });
+  document.querySelectorAll("[data-assist]").forEach(btn => {
+    btn.onclick = () => openFinanceClaim(btn.dataset.assist);
+  });
+  document.querySelectorAll("[data-view-claim]").forEach(btn => {
+    btn.onclick = () => openFinanceView(btn.dataset.viewClaim);
+  });
+}
+
+function recCell(t) {
+  if (t.status !== "unclaimed") return '<span class="muted">-</span>';
+  if (!t.rec) return '<span class="muted">暂无推荐</span>';
+  const cls = t.rec.level === "high" ? "conf-high" : t.rec.level === "mid" ? "conf-mid" : "conf-low";
+  const label = t.rec.level === "high" ? "高" : "中";
+  return `<div class="rec">
+    <div class="rec-main">${t.rec.merchantName}</div>
+    <div class="rec-sub"><span class="${cls}">${label} ${t.rec.confidence}%</span> · ${t.rec.bizLine}</div>
+  </div>`;
+}
+
+function finAction(t) {
+  if (t.status === "unclaimed") return `<button class="btn-link" data-assist="${t.id}">辅助认领</button>`;
+  if (t.status === "finance") return `<button class="btn-link" data-view-claim="${t.id}">查看</button>`;
+  return `<button class="btn-link" disabled title="业务已最终认领，不可覆盖">-</button>`;
+}
+
+function onBizClaim(id) {
+  const t = txns.find(x => x.id === id);
+  if (t.status === "finance") openOverwriteConfirm(t);
+  else openBizClaimModal(t, false);
+}
+
+function openOverwriteConfirm(t) {
+  pendingOverwriteId = t.id;
+  $("mask").classList.add("show");
+  $("mask").innerHTML = `
+    <div class="modal">
+      <div class="modal-h">覆盖财务辅助认领？<button class="x" id="cx">×</button></div>
+      <div class="modal-b">
+        <div class="alert alert-warn">当前流水已由财务辅助认领，资金已入账。继续操作将覆盖财务结果。</div>
+        <div class="summary">
+          <div class="k">财务认领商户</div><div class="v">${t.financeClaim.merchantName}</div>
+          <div class="k">业务线</div><div class="v">${t.financeClaim.bizLine}</div>
+          <div class="k">认领人</div><div class="v">${t.financeClaim.operator}</div>
+          <div class="k">认领时间</div><div class="v">${t.financeClaim.time}</div>
+        </div>
+        <div>本次认领将自动：</div>
+        <ol class="steps">
+          <li>回退财务认领及入账</li>
+          <li>按你的认领结果重新充值</li>
+          <li>以业务认领作为最终结果</li>
+        </ol>
+      </div>
+      <div class="modal-f">
+        <button class="btn" id="cx2">取消</button>
+        <button class="btn btn-primary" id="go">继续认领</button>
+      </div>
+    </div>`;
+  $("cx").onclick = $("cx2").onclick = closeMask;
+  $("go").onclick = () => {
+    closeMask();
+    openBizClaimModal(t, true);
+  };
+}
+
+function merchantOptions(selected) {
+  return MERCHANTS.map(m => `<option value="${m.id}" ${m.id===selected?"selected":""}>${m.name}（${m.id}）</option>`).join("");
+}
+function lineOptions(selected) {
+  return `<option value="">请选择业务线</option>` + BIZ_LINES.map(l => `<option ${l===selected?"selected":""}>${l}</option>`).join("");
+}
+
+function openBizClaimModal(t, fromFinance) {
+  activeId = t.id;
+  const line = fromFinance ? t.bizLine : "";
+  const merchantId = fromFinance ? t.merchantId : "";
+  const files = fromFinance ? t.attachments : [];
+  $("mask").classList.add("show");
+  $("mask").innerHTML = `
+    <div class="modal">
+      <div class="modal-h">一键认领<button class="x" id="cx">×</button></div>
+      <div class="modal-b">
+        ${fromFinance ? `<div class="alert alert-info">已带出财务辅助认领的业务线、商户和附件，可修改后确认。确认后将覆盖财务认领并重新充值。</div>` : ""}
+        <div class="summary">
+          <div class="k">交易号</div><div class="v">${t.txnNo}</div>
+          <div class="k">金额</div><div class="v amt">${t.currency} ${Number(t.amount).toFixed(2)}</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label class="req">业务线</label>
+            <select id="fLine">${lineOptions(line)}</select>
+          </div>
+          <div class="form-row">
+            <label class="req">商户</label>
+            <select id="fMerchant"><option value="">请选择商户</option>${merchantOptions(merchantId)}</select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>上传附件</label>
+          <div class="file">
+            <span>${files.length ? files.map(f => `<span class="file-item">${f}</span>`).join("、") : "点击上传 / 拖拽文件"}</span>
+            <button class="btn" type="button">选择文件</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-f">
+        <button class="btn" id="cx2">取消</button>
+        <button class="btn btn-primary" id="ok">${fromFinance ? "确认覆盖并认领" : "确认认领"}</button>
+      </div>
+    </div>`;
+  $("cx").onclick = $("cx2").onclick = closeMask;
+  $("ok").onclick = () => submitBizClaim(fromFinance);
+}
+
+function submitBizClaim(fromFinance) {
+  const t = txns.find(x => x.id === activeId);
+  const merchantId = $("fMerchant").value;
+  const bizLine = $("fLine").value;
+  if (!bizLine) { toast("请选择业务线"); return; }
+  if (!merchantId) { toast("请选择商户"); return; }
+  const m = MERCHANTS.find(x => x.id === merchantId);
+  t.status = "business";
+  t.merchantId = m.id;
+  t.merchantName = m.name;
+  t.customerName = m.name;
+  t.customerCode = t.customerCode || "M-" + m.id;
+  t.bizLine = bizLine;
+  t.financeClaim = fromFinance ? t.financeClaim : t.financeClaim;
+  closeMask();
+  toast(fromFinance ? "认领成功，已覆盖财务辅助认领并完成重新充值" : "认领成功，资金已充值到商户账户");
+  render();
+}
+
+function recCard(t) {
+  if (!t.rec) {
+    return `<div class="rec-card none">
+      <div class="rec-title">暂无可靠推荐</div>
+      <div class="muted" style="margin-top:8px">付款账号、付款人、Reference 均无足够历史命中，请人工选择业务线与商户。</div>
+    </div>`;
+  }
+  const mid = t.rec.level === "mid";
+  return `<div class="rec-card ${mid ? "mid" : ""}">
+    <div class="rec-head">
+      <div class="rec-title">智能推荐</div>
+      <span class="tag ${mid ? "tag-gray" : "tag-green"}">${mid ? "中" : "高"} ${t.rec.confidence}%</span>
+    </div>
+    <div class="rec-meta">
+      <div class="k">推荐业务线</div><div>${t.rec.bizLine}</div>
+      <div class="k">推荐商户</div><div>${t.rec.merchantName}（${t.rec.merchantId}）</div>
+    </div>
+    ${mid ? `<div class="muted" style="margin-top:8px">推荐可信度为中，请核对后再入账。系统已预填，可修改。</div>` : ""}
+    <div class="reason-label">推荐原因</div>
+    <ul class="reason">${t.rec.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
+  </div>`;
+}
+
+function openFinanceClaim(id) {
+  const t = txns.find(x => x.id === id);
+  activeId = id;
+  const prefill = t.rec && t.rec.level !== "low";
+  const line = prefill ? t.rec.bizLine : "";
+  const merchantId = prefill ? t.rec.merchantId : "";
+  $("mask").classList.add("show");
+  $("mask").innerHTML = `
+    <div class="modal wide">
+      <div class="modal-h">辅助认领<button class="x" id="cx">×</button></div>
+      <div class="modal-b">
+        <div class="alert alert-info">财务辅助认领确认后将立即入账，无需等待业务确认。业务后续仍可覆盖。</div>
+        <div class="summary">
+          <div class="k">交易号</div><div class="v">${t.txnNo}</div>
+          <div class="k">到账金额</div><div class="v amt">${t.currency} ${Number(t.received).toFixed(2)}</div>
+          <div class="k">付款人</div><div class="v">${t.payerName}</div>
+          <div class="k">付款账号</div><div class="v">${t.payerAccount}</div>
+        </div>
+        ${recCard(t)}
+        <div class="form-grid">
+          <div class="form-row">
+            <label class="req">业务线</label>
+            <select id="fLine">${lineOptions(line)}</select>
+          </div>
+          <div class="form-row">
+            <label class="req">商户</label>
+            <select id="fMerchant"><option value="">请选择商户</option>${merchantOptions(merchantId)}</select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>上传附件</label>
+          <div class="file"><span>点击上传 / 拖拽文件</span><button class="btn" type="button">选择文件</button></div>
+        </div>
+      </div>
+      <div class="modal-f">
+        <button class="btn" id="cx2">取消</button>
+        <button class="btn btn-primary" id="ok">确认辅助认领并入账</button>
+      </div>
+    </div>`;
+  $("cx").onclick = $("cx2").onclick = closeMask;
+  $("ok").onclick = submitFinanceClaim;
+}
+
+function submitFinanceClaim() {
+  const t = txns.find(x => x.id === activeId);
+  const merchantId = $("fMerchant").value;
+  const bizLine = $("fLine").value;
+  if (!bizLine) { toast("请选择业务线"); return; }
+  if (!merchantId) { toast("请选择商户"); return; }
+  const m = MERCHANTS.find(x => x.id === merchantId);
+  t.status = "finance";
+  t.merchantId = m.id;
+  t.merchantName = m.name;
+  t.customerName = m.name;
+  t.customerCode = t.customerCode || "M-" + m.id;
+  t.bizLine = bizLine;
+  t.attachments = t.attachments.length ? t.attachments : ["财务辅助认领附件.pdf"];
+  t.financeClaim = {
+    operator: "当前财务",
+    time: "2026-08-15 23:40:00",
+    bizLine,
+    merchantId: m.id,
+    merchantName: m.name
+  };
+  closeMask();
+  toast("辅助认领成功，资金已入账");
+  render();
+}
+
+function openFinanceView(id) {
+  const t = txns.find(x => x.id === id);
+  $("mask").classList.add("show");
+  $("mask").innerHTML = `
+    <div class="modal">
+      <div class="modal-h">辅助认领详情<button class="x" id="cx">×</button></div>
+      <div class="modal-b">
+        <div class="alert alert-info">该流水已由财务辅助认领并完成入账。业务拥有最终认领权，财务不可覆盖业务结果。</div>
+        <div class="detail-list">
+          <div class="detail-row"><div class="k">认领状态</div><div class="v">${statusTag("finance","fin")}</div></div>
+          <div class="detail-row"><div class="k">入账结果</div><div class="v">已入账</div></div>
+          <div class="detail-row"><div class="k">认领人</div><div class="v">${t.financeClaim.operator}</div></div>
+          <div class="detail-row"><div class="k">认领时间</div><div class="v">${t.financeClaim.time}</div></div>
+          <div class="detail-row"><div class="k">业务线</div><div class="v">${t.financeClaim.bizLine}</div></div>
+          <div class="detail-row"><div class="k">商户</div><div class="v">${t.financeClaim.merchantName}（${t.financeClaim.merchantId}）</div></div>
+        </div>
+      </div>
+      <div class="modal-f"><button class="btn btn-primary" id="cx2">关闭</button></div>
+    </div>`;
+  $("cx").onclick = $("cx2").onclick = closeMask;
+}
+
+function renderSpec() {
+  $("app").innerHTML = `
+    <div class="crumb">Fund &nbsp;&gt;&nbsp; 原型 &nbsp;&gt;&nbsp; <b>设计说明</b></div>
+    <div class="keep spec">
+      <h2>收款流水辅助认领 · 增量设计说明</h2>
+      <p class="lead">原则：财务辅助认领，业务最终认领。不改现有布局与主流程，只加必要状态、提示和推荐。</p>
+
+      <h3>1. 两个页面怎么改</h3>
+      <table>
+        <thead><tr><th>页面</th><th>保持不变</th><th>本次增量</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>业务入账 → 收款明细</td>
+            <td>渠道 Tab、查询区、Excel 上传/模板/导出、原有列、「一键认领」</td>
+            <td>新增「认领状态」列；财务已认领时出覆盖确认；认领弹窗回填财务结果</td>
+          </tr>
+          <tr>
+            <td>公司业务 → 收款流水</td>
+            <td>原查询字段、导出、原有列</td>
+            <td>默认未认领优先；新增认领状态 / 推荐认领 / 操作；辅助认领弹窗含推荐</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2. 新增字段</h3>
+      <table>
+        <thead><tr><th>位置</th><th>字段</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>业务页表格</td><td>认领状态</td><td>仅财务已辅助认领显示 Tag；未认领、业务已认领显示 “-”</td></tr>
+          <tr><td>业务页展开筛选</td><td>认领状态</td><td>放在「展开」内，不挤占现有首行查询</td></tr>
+          <tr><td>财务页表格</td><td>认领状态</td><td>未认领 / 财务已辅助认领 / 业务已认领</td></tr>
+          <tr><td>财务页表格</td><td>推荐认领</td><td>仅未认领展示商户 + 可信度；已认领为 “-”</td></tr>
+          <tr><td>财务页表格</td><td>操作</td><td>未认领：辅助认领；财务已认领：查看；业务已认领：不可操作</td></tr>
+          <tr><td>财务页工具条</td><td>状态快捷筛选</td><td>默认「未认领」</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3. 新增 Tag</h3>
+      <p>
+        <span class="tag tag-blue">财务已辅助认领</span>
+        蓝色，表示已入账但不是最终业务决策。<br/><br/>
+        <span class="tag tag-green">业务已认领</span>
+        绿色，仅财务页展示，防止财务再动。<br/><br/>
+        <span class="tag tag-gray">未认领</span>
+        灰色，仅财务页展示，便于在「全部」中扫读。业务页未认领不打 Tag，避免 15 万行噪音。
+      </p>
+
+      <h3>4. 新增状态</h3>
+      <table>
+        <thead><tr><th>状态</th><th>入账</th><th>业务可否再认领</th><th>财务可否辅助认领</th><th>最终结果</th></tr></thead>
+        <tbody>
+          <tr><td>未认领</td><td>否</td><td>是</td><td>是</td><td>无</td></tr>
+          <tr><td>财务已辅助认领</td><td>是，立刻入账</td><td>是，覆盖</td><td>否，仅查看</td><td>临时有效，可被业务覆盖</td></tr>
+          <tr><td>业务已认领</td><td>是</td><td>沿用现有一键认领</td><td>否</td><td>最终结果</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5. 弹窗交互</h3>
+      <p><b>业务覆盖确认：</b>仅当状态=财务已辅助认领，点「一键认领」先出确认，再打开原认领弹窗。</p>
+      <p><b>业务认领弹窗：</b>若来自财务结果，默认带出业务线、商户、附件，允许修改。提示「确认后将覆盖财务认领并重新充值」。</p>
+      <p><b>财务辅助认领弹窗：</b>展示流水摘要 + 推荐卡 + 业务线/商户/附件。高/中可信度预填；无推荐不预填。主按钮为「确认辅助认领并入账」。</p>
+      <p><b>财务查看弹窗：</b>只读，展示认领人、时间、商户、入账结果。不做二次覆盖。</p>
+
+      <h3>6. 按钮交互</h3>
+      <table>
+        <thead><tr><th>按钮</th><th>出现条件</th><th>行为</th></tr></thead>
+        <tbody>
+          <tr><td>一键认领</td><td>业务页所有行，保持现网</td><td>未认领直接弹窗；财务已认领先确认再弹窗</td></tr>
+          <tr><td>确认覆盖并认领</td><td>业务弹窗（覆盖场景）</td><td>回退财务入账，按业务结果重充，状态变为业务已认领</td></tr>
+          <tr><td>辅助认领</td><td>财务页且未认领</td><td>打开辅助认领弹窗，确认后立刻入账</td></tr>
+          <tr><td>查看</td><td>财务页且财务已辅助认领</td><td>只读详情</td></tr>
+          <tr><td>导出 / Excel</td><td>原位置不动</td><td>不改</td></tr>
+        </tbody>
+      </table>
+      <p>不做批量认领，避免误入账。</p>
+
+      <h3>7. 推荐信息展示</h3>
+      <p>表格内：一行商户名 + 高/中可信度，方便扫读。</p>
+      <p>弹窗内：推荐业务线、推荐商户、可信度、推荐原因（付款账号历史频次为最强信号）。</p>
+      <p>预填规则：≥90% 直接预填；60%–89% 预填并提示核对；无可靠推荐不预填。</p>
+      <p>推荐优先级：付款账号历史认领 → Reference/备注/附言中的商户或客户代码 → 付款人名称+历史商户 → 收款账户+币种+付款账号 → 主体+收款机构（弱特征，不单独定商户）。</p>
+
+      <h3>8. 页面优化原因</h3>
+      <ul>
+        <li>业务页只加 Tag，是为了让业务知道「财务已经先入账」，但不打断现有一键认领。</li>
+        <li>覆盖前提示，是避免业务不知道会回退财务入账。</li>
+        <li>弹窗回填财务结果，是减少重复选择，不是锁定财务决定。</li>
+        <li>财务页默认未认领，是把人力放到真正拖慢到账的流水上。</li>
+        <li>推荐预填，是降低选商户成本；仍可改，避免错入账。</li>
+        <li>业务已认领财务不可操作，是守住「业务最终认领权」。</li>
+        <li>两个菜单保持独立，只共享流水状态，符合现有信息架构。</li>
+      </ul>
+    </div>
+  `;
+}
+
+document.querySelectorAll(".menu-item").forEach(btn => {
+  btn.onclick = () => { view = btn.dataset.view; closeMask(); render(); };
+});
+$("mask").addEventListener("click", (e) => { if (e.target.id === "mask") closeMask(); });
+render();
+</script>
+</body>
+</html>
