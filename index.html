@@ -350,6 +350,12 @@
       padding: 0 11px; outline: none; font-size: var(--font);
     }
     .form-row input:focus, .form-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
+    .form-row textarea {
+      height: 96px; padding: 8px 11px; resize: vertical; line-height: 1.5;
+    }
+    .btn-link-danger { color: var(--error); }
+    .btn-link-danger:hover { color: #d9363e; }
+    .act-links { display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }
     .alert {
       padding: 12px 14px; border-radius: 6px; margin-bottom: 16px; font-size: var(--font); line-height: 1.65;
       border: 1px solid transparent;
@@ -807,10 +813,7 @@ function closeMask() { $("mask").classList.remove("show"); $("mask").innerHTML =
 
 function statusTag(status, page) {
   if (status === "finance") return '<span class="tag tag-blue">财务已辅助认领</span>';
-  if (status === "business") {
-    if (page === "fin") return '<span class="tag tag-green">已认领</span>';
-    return '<span class="muted">-</span>';
-  }
+  if (status === "business") return '<span class="tag tag-green">已认领</span>';
   if (page === "fin") return '<span class="tag tag-gray">未认领</span>';
   return '<span class="muted">-</span>';
 }
@@ -858,7 +861,7 @@ function renderBiz() {
           <button class="btn-text" id="bizExpand">${bizExpanded ? "收起" : "展开"}</button>
         </div>
         <div class="filters-extra">
-          <select><option>认领状态（全部）</option><option>未认领</option><option>财务已辅助认领</option></select>
+          <select><option>认领状态（全部）</option><option>未认领</option><option>财务已辅助认领</option><option>已认领</option></select>
         </div>
       </div>
     </section>
@@ -903,7 +906,7 @@ function renderBiz() {
         </table>
       </div>
       <div class="pager">
-        <div>共 ${rows.length} 条记录<span class="muted">（演示数据；现网该渠道 153340 条）</span></div>
+        <div>共 ${rows.length} 条记录</div>
         <div class="pager-right">
           <select class="btn"><option>20条/页</option></select>
           <button class="page-btn active">1</button>
@@ -1032,6 +1035,9 @@ function renderFin() {
   document.querySelectorAll("[data-view-claim]").forEach(btn => {
     btn.onclick = () => openFinanceView(btn.dataset.viewClaim);
   });
+  document.querySelectorAll("[data-revoke]").forEach(btn => {
+    btn.onclick = () => openFinanceRevoke(btn.dataset.revoke);
+  });
 }
 
 function recCell(t) {
@@ -1047,8 +1053,11 @@ function recCell(t) {
 
 function finAction(t) {
   if (t.status === "unclaimed") return `<button class="btn-link" data-assist="${t.id}">辅助认领</button>`;
-  if (t.status === "finance") return `<button class="btn-link" data-view-claim="${t.id}">查看</button>`;
-  return `<button class="btn-link" disabled title="业务已最终认领，不可覆盖">-</button>`;
+  if (t.status === "finance") return `<span class="act-links">
+    <button class="btn-link" data-view-claim="${t.id}">查看</button>
+    <button class="btn-link btn-link-danger" data-revoke="${t.id}">撤销认领</button>
+  </span>`;
+  return `<span class="muted" title="业务已最终认领，不可覆盖">-</span>`;
 }
 
 function onBizClaim(id) {
@@ -1257,7 +1266,7 @@ function openFinanceView(id) {
     <div class="modal">
       <div class="modal-h">辅助认领详情<button class="x" id="cx">×</button></div>
       <div class="modal-b">
-        <div class="alert alert-info">该流水已由财务辅助认领并完成入账。业务拥有最终认领权，财务不可覆盖业务结果。</div>
+        <div class="alert alert-info">该流水已由财务辅助认领并完成入账。业务拥有最终认领权，财务不可覆盖业务结果。业务尚未最终认领前，财务可撤销。</div>
         <div class="detail-list">
           <div class="detail-row"><div class="k">认领状态</div><div class="v">${statusTag("finance","fin")}</div></div>
           <div class="detail-row"><div class="k">入账结果</div><div class="v">已入账</div></div>
@@ -1267,9 +1276,77 @@ function openFinanceView(id) {
           <div class="detail-row"><div class="k">商户</div><div class="v">${t.financeClaim.merchantName}（${t.financeClaim.merchantId}）</div></div>
         </div>
       </div>
-      <div class="modal-f"><button class="btn btn-primary" id="cx2">关闭</button></div>
+      <div class="modal-f">
+        <button class="btn" id="cx2">关闭</button>
+        <button class="btn btn-danger" id="goRevoke">撤销认领</button>
+      </div>
     </div>`;
   $("cx").onclick = $("cx2").onclick = closeMask;
+  $("goRevoke").onclick = () => { closeMask(); openFinanceRevoke(id); };
+}
+
+function openFinanceRevoke(id) {
+  const t = txns.find(x => x.id === id);
+  if (!t || t.status !== "finance" || !t.financeClaim) {
+    toast("仅财务已辅助认领且业务未最终认领的流水可撤销");
+    return;
+  }
+  activeId = id;
+  $("mask").classList.add("show");
+  $("mask").innerHTML = `
+    <div class="modal">
+      <div class="modal-h">撤销辅助认领？<button class="x" id="cx">×</button></div>
+      <div class="modal-b">
+        <div class="alert alert-warn">撤销后将回退已入账金额，流水恢复为未认领。若商户已使用该资金、余额不足回退，撤销将失败。</div>
+        <div class="summary">
+          <div class="k">商户</div><div class="v">${t.financeClaim.merchantName}</div>
+          <div class="k">业务线</div><div class="v">${t.financeClaim.bizLine}</div>
+          <div class="k">金额</div><div class="v amt">${t.currency} ${Number(t.received).toFixed(2)}</div>
+          <div class="k">认领人</div><div class="v">${t.financeClaim.operator}</div>
+        </div>
+        <div class="form-row">
+          <label class="req">撤销原因</label>
+          <textarea id="revokeReason" placeholder="请填写撤销原因，便于对账"></textarea>
+        </div>
+      </div>
+      <div class="modal-f">
+        <button class="btn" id="cx2">取消</button>
+        <button class="btn btn-danger" id="ok">确认撤销</button>
+      </div>
+    </div>`;
+  $("cx").onclick = $("cx2").onclick = closeMask;
+  $("ok").onclick = submitFinanceRevoke;
+}
+
+function submitFinanceRevoke() {
+  const t = txns.find(x => x.id === activeId);
+  if (!t || t.status !== "finance") {
+    toast("当前状态不可撤销");
+    closeMask();
+    return;
+  }
+  const reason = ($("revokeReason").value || "").trim();
+  if (!reason) { toast("请填写撤销原因"); return; }
+  t.lastRevoke = {
+    operator: "当前财务",
+    time: "2026-08-17 14:20:00",
+    reason,
+    merchantName: t.financeClaim.merchantName,
+    merchantId: t.financeClaim.merchantId,
+    amount: t.received,
+    currency: t.currency
+  };
+  t.status = "unclaimed";
+  t.customerName = "";
+  t.customerCode = "";
+  t.merchantId = "";
+  t.merchantName = "";
+  t.bizLine = "";
+  t.attachments = [];
+  t.financeClaim = null;
+  closeMask();
+  toast("已撤销辅助认领，资金已回退");
+  render();
 }
 
 function renderSpec() {
@@ -1300,11 +1377,11 @@ function renderSpec() {
       <table>
         <thead><tr><th>位置</th><th>字段</th><th>说明</th></tr></thead>
         <tbody>
-          <tr><td>业务页表格</td><td>认领状态</td><td>仅财务已辅助认领显示 Tag；未认领、业务已认领显示 “-”</td></tr>
+          <tr><td>业务页表格</td><td>认领状态</td><td>财务已辅助认领 / 已认领；未认领显示 “-”</td></tr>
           <tr><td>业务页展开筛选</td><td>认领状态</td><td>放在「展开」内，不挤占现有首行查询</td></tr>
           <tr><td>财务页表格</td><td>认领状态</td><td>未认领 / 财务已辅助认领 / 业务已认领</td></tr>
           <tr><td>财务页表格</td><td>推荐认领</td><td>仅未认领展示商户 + 可信度；已认领为 “-”</td></tr>
-          <tr><td>财务页表格</td><td>操作</td><td>未认领：辅助认领；财务已认领：查看；业务已认领：不可操作</td></tr>
+          <tr><td>财务页表格</td><td>操作</td><td>未认领：辅助认领；财务已认领：查看 / 撤销认领；已认领：不可操作</td></tr>
           <tr><td>财务页工具条</td><td>状态快捷筛选</td><td>默认「未认领」</td></tr>
         </tbody>
       </table>
@@ -1313,8 +1390,8 @@ function renderSpec() {
       <p>
         <span class="tag tag-blue">财务已辅助认领</span>
         蓝色，表示已入账但不是最终业务决策。<br/><br/>
-        <span class="tag tag-green">业务已认领</span>
-        绿色，仅财务页展示，防止财务再动。<br/><br/>
+        <span class="tag tag-green">已认领</span>
+        绿色，业务最终认领结果。业务页、财务页都展示。<br/><br/>
         <span class="tag tag-gray">未认领</span>
         灰色，仅财务页展示，便于在「全部」中扫读。业务页未认领不打 Tag，避免 15 万行噪音。
       </p>
@@ -1324,7 +1401,7 @@ function renderSpec() {
         <thead><tr><th>状态</th><th>入账</th><th>业务可否再认领</th><th>财务可否辅助认领</th><th>最终结果</th></tr></thead>
         <tbody>
           <tr><td>未认领</td><td>否</td><td>是</td><td>是</td><td>无</td></tr>
-          <tr><td>财务已辅助认领</td><td>是，立刻入账</td><td>是，覆盖</td><td>否，仅查看</td><td>临时有效，可被业务覆盖</td></tr>
+          <tr><td>财务已辅助认领</td><td>是，立刻入账</td><td>是，覆盖</td><td>可查看、可撤销</td><td>临时有效，可被业务覆盖或财务撤销</td></tr>
           <tr><td>业务已认领</td><td>是</td><td>沿用现有一键认领</td><td>否</td><td>最终结果</td></tr>
         </tbody>
       </table>
@@ -1333,7 +1410,8 @@ function renderSpec() {
       <p><b>业务覆盖确认：</b>仅当状态=财务已辅助认领，点「一键认领」先出确认，再打开原认领弹窗。</p>
       <p><b>业务认领弹窗：</b>若来自财务结果，默认带出业务线、商户、附件，允许修改。提示「确认后将覆盖财务认领并重新充值」。</p>
       <p><b>财务辅助认领弹窗：</b>展示流水摘要 + 推荐卡 + 业务线/商户/附件。高/中可信度预填；无推荐不预填。主按钮为「确认辅助认领并入账」。</p>
-      <p><b>财务查看弹窗：</b>只读，展示认领人、时间、商户、入账结果。不做二次覆盖。</p>
+      <p><b>财务查看弹窗：</b>展示认领人、时间、商户、入账结果。可从详情发起撤销，不可覆盖业务已认领。</p>
+      <p><b>财务撤销弹窗：</b>仅财务已辅助认领可操作。确认后回退入账、恢复未认领，必须填写撤销原因。业务已认领不可撤销。</p>
 
       <h3>6. 按钮交互</h3>
       <table>
@@ -1342,7 +1420,8 @@ function renderSpec() {
           <tr><td>一键认领</td><td>业务页所有行，保持现网</td><td>未认领直接弹窗；财务已认领先确认再弹窗</td></tr>
           <tr><td>确认覆盖并认领</td><td>业务弹窗（覆盖场景）</td><td>回退财务入账，按业务结果重充，状态变为业务已认领</td></tr>
           <tr><td>辅助认领</td><td>财务页且未认领</td><td>打开辅助认领弹窗，确认后立刻入账</td></tr>
-          <tr><td>查看</td><td>财务页且财务已辅助认领</td><td>只读详情</td></tr>
+          <tr><td>查看</td><td>财务页且财务已辅助认领</td><td>只读详情，可从详情进入撤销</td></tr>
+          <tr><td>撤销认领</td><td>财务页且财务已辅助认领</td><td>填写原因后回退入账，状态回到未认领</td></tr>
           <tr><td>导出 / Excel</td><td>原位置不动</td><td>不改</td></tr>
         </tbody>
       </table>
