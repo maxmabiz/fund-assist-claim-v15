@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fund · 收款流水辅助认领</title>
+  <title>Fund · 收款流水智能推荐</title>
   <style>
     :root {
       --bg: #f5f5f5;
@@ -24,9 +24,9 @@
       --header: 64px;
       --sider: 260px;
       --radius: 6px;
-      --font: 18px;
-      --font-sm: 16px;
-      --font-lg: 20px;
+      --font: 13px;
+      --font-sm: 13px;
+      --font-lg: 13px;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; }
@@ -57,7 +57,7 @@
       gap: 8px;
       padding: 0 20px;
       font-weight: 700;
-      font-size: 22px;
+      font-size: 13px;
       border-bottom: 1px solid rgba(255,255,255,.08);
     }
     .brand-mark {
@@ -108,7 +108,7 @@
     .avatar {
       width: 28px; height: 28px; border-radius: 50%;
       background: #adc6ff; color: #1d39c4;
-      display: grid; place-items: center; font-size: 12px; font-weight: 600; margin-left: 8px;
+      display: grid; place-items: center; font-size: 13px; font-weight: 600; margin-left: 8px;
     }
 
     .page { padding: 16px 20px 24px; flex: 1; }
@@ -414,13 +414,39 @@
     .toast.show { opacity: 1; }
 
     .spec { max-width: 980px; }
-    .spec h2 { font-size: 24px; margin: 0 0 8px; }
-    .spec h3 { font-size: 20px; margin: 24px 0 8px; }
+    .spec h2 { font-size: 13px; margin: 0 0 8px; }
+    .spec h3 { font-size: 13px; margin: 24px 0 8px; }
     .spec p, .spec li { line-height: 1.7; color: var(--text); }
     .spec .lead { color: var(--text-2); margin-bottom: 20px; }
     .spec table { min-width: 0; background: #fff; }
     .spec th, .spec td { white-space: normal; }
     .keep { background: #fff; border-radius: 8px; padding: 20px 24px; }
+    tbody tr.row-hl { background: #e6f4ff; outline: 2px solid #91caff; outline-offset: -2px; }
+    .note { color: var(--text-2); font-size: var(--font-sm); line-height: 1.6; margin-top: 8px; }
+    .fs-list { display: flex; flex-direction: column; gap: 0; }
+    .skip-list { max-width: 720px; background: #fff; border-radius: 8px; padding: 16px 20px; }
+    .skip-list li { margin: 8px 0; line-height: 1.6; }
+    .fs-card {
+      max-width: 560px; background: #fff; border: 1px solid var(--line);
+      border-radius: 8px; overflow: hidden; margin-bottom: 16px;
+    }
+    .fs-h { background: #3370ff; color: #fff; padding: 12px 16px; font-weight: 600; }
+    .fs-b { padding: 16px; }
+    .fs-row { display: grid; grid-template-columns: 108px 1fr; gap: 8px; margin-bottom: 8px; }
+    .fs-row .k { color: var(--text-2); }
+    .fs-actions { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); }
+    .cfg-card { max-width: 720px; }
+    .cfg-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+    .cfg-row:last-child { border-bottom: 0; }
+    .cfg-row input[type="number"] { width: 120px; height: 40px; padding: 0 11px; border: 1px solid var(--line-strong); border-radius: var(--radius); }
+    .switch {
+      width: 44px; height: 24px; border-radius: 12px; border: 0; background: #d9d9d9; position: relative; cursor: pointer;
+    }
+    .switch.on { background: var(--primary); }
+    .switch i {
+      position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s;
+    }
+    .switch.on i { left: 22px; }
   </style>
 </head>
 <body>
@@ -430,10 +456,11 @@
       <nav class="menu">
         <div class="menu-group">业务入账</div>
         <button class="menu-item active" data-view="biz">收款明细</button>
-        <div class="menu-group">公司业务</div>
-        <button class="menu-item" data-view="fin">收款流水</button>
+        <div class="menu-group">系统</div>
+        <button class="menu-item" data-view="cfg">推荐配置</button>
       </nav>
       <div class="menu-foot">
+        <button class="menu-item" data-view="fs">飞书通知示意</button>
         <button class="menu-item" data-view="spec">设计说明</button>
       </div>
     </aside>
@@ -456,12 +483,12 @@
 <script>
 const BIZ_LINES = ["广告", "代发", "商城", "其他"];
 const MERCHANTS = [
-  { id: "14229", name: "星辰出海-广告主账户", line: "广告" },
-  { id: "3639", name: "万里汇零售测试中", line: "商城" },
-  { id: "88021", name: "迅达供应链-代发账户", line: "代发" },
-  { id: "55210", name: "北辰广告-欧洲账户", line: "广告" },
-  { id: "71008", name: "华贸商城-主账户", line: "商城" },
-  { id: "22617", name: "远航支付-美国账户", line: "其他" },
+  { id: "14229", name: "星辰出海-广告主账户", line: "广告", maintainer: "林晓", maintainerMode: "single" },
+  { id: "3639", name: "万里汇零售测试中", line: "商城", maintainer: "王敏", maintainerMode: "multi" },
+  { id: "88021", name: "迅达供应链-代发账户", line: "代发", maintainer: "", maintainerMode: "none" },
+  { id: "55210", name: "北辰广告-欧洲账户", line: "广告", maintainer: "赵倩", maintainerMode: "single" },
+  { id: "71008", name: "华贸商城-主账户", line: "商城", maintainer: "周宁", maintainerMode: "single" },
+  { id: "22617", name: "远航支付-美国账户", line: "其他", maintainer: "吴洋", maintainerMode: "single" },
 ];
 
 const PLATFORMS = ["Wise", "Airwallex", "Payoneer", "Worldfirst", "PingPong", "Others", "HSBC USD (Swift)", "Bank Wise EUR (SEPA)"];
@@ -469,10 +496,17 @@ const PLATFORMS = ["Wise", "Airwallex", "Payoneer", "Worldfirst", "PingPong", "O
 let view = "biz";
 let bizPlatform = "Airwallex";
 let finStatusFilter = "unclaimed";
+let bizStatusFilter = "all";
 let bizExpanded = false;
-let finExpanded = false;
 let activeId = null;
-let pendingOverwriteId = null;
+let highlightId = null;
+let claimDraft = { voucherName: "" };
+
+const cfg = {
+  notifyEnabled: true,
+  threshold: 80,
+  today: "2026-09-01",
+};
 
 const txns = [
   {
@@ -498,9 +532,9 @@ const txns = [
     bizLine: "",
     status: "unclaimed",
     attachments: [],
-    financeClaim: null,
+    muted: false,
+    notifiedDate: "2026-09-01",
     rec: {
-      level: "high",
       confidence: 98,
       bizLine: "广告",
       merchantId: "14229",
@@ -513,44 +547,74 @@ const txns = [
     }
   },
   {
-    id: "a2",
+    id: "a6",
     platform: "Airwallex",
     alias: "airwallex-muxue-real",
     entity: "666",
     type: "-",
     subType: "-",
-    txnNo: "9f1b22aa-44d0-4b8e-91c0-77c1d2aa0012",
-    time: "2026-08-05 18:12:03",
+    txnNo: "aa9011bb-33c0-4111-8888-777700000055",
+    time: "2026-08-03 16:08:22",
     currency: "USD",
-    amount: 2000.00,
-    received: 2000.00,
+    amount: 450.00,
+    received: 450.00,
     fee: 0,
-    payerName: "NORTHSTAR MEDIA LIMITED",
-    payerAccount: "DE89370400440532013000",
+    payerName: "AGENT DROP SHIP LTD",
+    payerAccount: "GB33BUKB20201555555555",
     method: "-",
-    customerName: "星辰出海-广告主账户",
-    customerCode: "SC-AD-001",
-    merchantId: "14229",
-    merchantName: "星辰出海-广告主账户",
-    bizLine: "广告",
-    status: "finance",
-    attachments: ["财务辅助认领-水单.pdf"],
-    financeClaim: {
-      operator: "张财务",
-      time: "2026-08-15 10:12:03",
-      bizLine: "广告",
-      merchantId: "14229",
-      merchantName: "星辰出海-广告主账户"
-    },
+    customerName: "",
+    customerCode: "",
+    merchantId: "",
+    merchantName: "",
+    bizLine: "",
+    status: "unclaimed",
+    attachments: [],
+    muted: false,
+    notifiedDate: "",
     rec: {
-      level: "high",
-      confidence: 96,
-      bizLine: "广告",
-      merchantId: "14229",
-      merchantName: "星辰出海-广告主账户",
+      confidence: 94,
+      bizLine: "代发",
+      merchantId: "88021",
+      merchantName: "迅达供应链-代发账户",
       reasons: [
-        "付款账号 DE89370400440532013000：历史 80 次中 77 次认领至 星辰出海-广告主账户",
-        "Reference 含商户代码 SC-AD-001"
+        "付款账号 GB33BUKB20201555555555：历史 50 次中 47 次认领至 迅达供应链-代发账户",
+        "备注含 DAIFA"
+      ]
+    }
+  },
+  {
+    id: "a7",
+    platform: "Airwallex",
+    alias: "airwallex-muxue-real",
+    entity: "666",
+    type: "-",
+    subType: "-",
+    txnNo: "wf-rec-multi-7701",
+    time: "2026-08-05 11:20:08",
+    currency: "USD",
+    amount: 1860.00,
+    received: 1860.00,
+    fee: 0,
+    payerName: "HANGZHOU RETAIL TRADE CO",
+    payerAccount: "6222021000001234567",
+    method: "-",
+    customerName: "",
+    customerCode: "",
+    merchantId: "",
+    merchantName: "",
+    bizLine: "",
+    status: "unclaimed",
+    attachments: [],
+    muted: false,
+    notifiedDate: "2026-09-01",
+    rec: {
+      confidence: 91,
+      bizLine: "商城",
+      merchantId: "3639",
+      merchantName: "万里汇零售测试中",
+      reasons: [
+        "付款账号 6222021000001234567：历史 210 次全部认领至 万里汇零售测试中",
+        "该商户有多名维护人，通知主维护人王敏"
       ]
     }
   },
@@ -577,9 +641,9 @@ const txns = [
     bizLine: "",
     status: "unclaimed",
     attachments: [],
-    financeClaim: null,
+    muted: false,
+    notifiedDate: "",
     rec: {
-      level: "mid",
       confidence: 72,
       bizLine: "广告",
       merchantId: "55210",
@@ -613,83 +677,37 @@ const txns = [
     bizLine: "",
     status: "unclaimed",
     attachments: [],
-    financeClaim: null,
+    muted: false,
+    notifiedDate: "",
     rec: null
   },
   {
-    id: "w1",
-    platform: "Worldfirst",
-    alias: "wf-retail-01",
-    entity: "万里汇零售测试中",
-    type: "-",
-    subType: "-",
-    txnNo: "WF20260804001",
-    time: "2026-08-04 11:02:18",
-    currency: "CNH",
-    amount: 12800.00,
-    received: 12740.00,
-    fee: 60.00,
-    payerName: "杭州某贸易有限公司",
-    payerAccount: "6222021000001234567",
-    method: "银行转账",
-    customerName: "万里汇零售测试中",
-    customerCode: "WF-RT-009",
-    merchantId: "3639",
-    merchantName: "万里汇零售测试中",
-    bizLine: "商城",
-    status: "business",
-    attachments: ["业务认领附件.png"],
-    financeClaim: null,
-    rec: {
-      level: "high",
-      confidence: 99,
-      bizLine: "商城",
-      merchantId: "3639",
-      merchantName: "万里汇零售测试中",
-      reasons: ["付款账号历史 210 次全部认领至该商户"]
-    }
-  },
-  {
-    id: "a5",
+    id: "auto1",
     platform: "Airwallex",
     alias: "airwallex-muxue-real",
     entity: "666",
     type: "-",
     subType: "-",
-    txnNo: "aa9011bb-33c0-4111-8888-777700000055",
-    time: "2026-08-03 16:08:22",
+    txnNo: "aw-auto-match-1001",
+    time: "2026-08-06 08:12:40",
     currency: "USD",
-    amount: 450.00,
-    received: 450.00,
+    amount: 500.00,
+    received: 500.00,
     fee: 0,
-    payerName: "AGENT DROP SHIP LTD",
-    payerAccount: "GB33BUKB20201555555555",
-    method: "-",
-    customerName: "迅达供应链-代发账户",
-    customerCode: "XD-DF-003",
-    merchantId: "88021",
-    merchantName: "迅达供应链-代发账户",
-    bizLine: "代发",
-    status: "finance",
-    attachments: ["代发到账截图.png"],
-    financeClaim: {
-      operator: "李财务",
-      time: "2026-08-14 17:40:11",
-      bizLine: "代发",
-      merchantId: "88021",
-      merchantName: "迅达供应链-代发账户"
-    },
-    rec: {
-      level: "high",
-      confidence: 94,
-      bizLine: "代发",
-      merchantId: "88021",
-      merchantName: "迅达供应链-代发账户",
-      reasons: [
-        "付款账号 GB33BUKB20201555555555：历史 50 次中 47 次认领至 迅达供应链-代发账户",
-        "备注含 DAIFA"
-      ]
-    }
+    payerName: "STARLINK ADS PTE LTD",
+    payerAccount: "GB12BARC20031847829415",
+    method: "Local Transfer",
+    customerName: "星辰出海-广告主账户",
+    customerCode: "SC-AD-001",
+    merchantId: "14229",
+    merchantName: "星辰出海-广告主账户",
+    bizLine: "广告",
+    status: "claimed",
+    creditedBy: "auto",
+    attachments: [],
+    muted: false,
+    notifiedDate: "",
+    rec: null
   },
   {
     id: "b1",
@@ -712,10 +730,50 @@ const txns = [
     merchantId: "14229",
     merchantName: "星辰出海-广告主账户",
     bizLine: "广告",
-    status: "business",
-    attachments: ["业务认领-广告到账.pdf"],
-    financeClaim: null,
-    rec: null
+    status: "claimed",
+    attachments: ["转账凭证-广告到账.pdf"],
+    muted: false,
+    notifiedDate: "",
+    rec: {
+      confidence: 99,
+      bizLine: "广告",
+      merchantId: "14229",
+      merchantName: "星辰出海-广告主账户",
+      reasons: ["付款账号历史高频命中该商户"]
+    }
+  },
+  {
+    id: "w1",
+    platform: "Worldfirst",
+    alias: "wf-retail-01",
+    entity: "万里汇零售测试中",
+    type: "-",
+    subType: "-",
+    txnNo: "WF20260804001",
+    time: "2026-08-04 11:02:18",
+    currency: "CNH",
+    amount: 12800.00,
+    received: 12740.00,
+    fee: 60.00,
+    payerName: "杭州某贸易有限公司",
+    payerAccount: "6222021000001234567",
+    method: "银行转账",
+    customerName: "万里汇零售测试中",
+    customerCode: "WF-RT-009",
+    merchantId: "3639",
+    merchantName: "万里汇零售测试中",
+    bizLine: "商城",
+    status: "claimed",
+    attachments: ["转账凭证-万里汇.png"],
+    muted: false,
+    notifiedDate: "",
+    rec: {
+      confidence: 99,
+      bizLine: "商城",
+      merchantId: "3639",
+      merchantName: "万里汇零售测试中",
+      reasons: ["付款账号历史 210 次全部认领至该商户"]
+    }
   },
   {
     id: "b2",
@@ -738,9 +796,10 @@ const txns = [
     merchantId: "71008",
     merchantName: "华贸商城-主账户",
     bizLine: "商城",
-    status: "business",
-    attachments: ["业务认领-商城.xlsx"],
-    financeClaim: null,
+    status: "claimed",
+    attachments: ["转账凭证-商城.xlsx"],
+    muted: false,
+    notifiedDate: "",
     rec: null
   },
   {
@@ -764,9 +823,10 @@ const txns = [
     merchantId: "55210",
     merchantName: "北辰广告-欧洲账户",
     bizLine: "广告",
-    status: "business",
-    attachments: ["业务认领-欧洲广告.pdf"],
-    financeClaim: null,
+    status: "claimed",
+    attachments: ["转账凭证-欧洲广告.pdf"],
+    muted: false,
+    notifiedDate: "",
     rec: null
   },
   {
@@ -790,39 +850,67 @@ const txns = [
     merchantId: "22617",
     merchantName: "远航支付-美国账户",
     bizLine: "其他",
-    status: "business",
-    attachments: ["业务认领-美国账户.png"],
-    financeClaim: null,
+    status: "claimed",
+    attachments: ["转账凭证-美国账户.png"],
+    muted: false,
+    notifiedDate: "",
     rec: null
   }
 ];
 
 function $(id) { return document.getElementById(id); }
-function money(n, ccy) {
-  const v = Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return (ccy === "USD" || ccy === "EUR" ? "$ " : "$ ") + v;
+function money(n) {
+  return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function dash(v) { return v && v !== "-" ? v : '<span class="muted">-</span>'; }
 function toast(msg) {
   const el = $("toast");
   el.textContent = msg;
   el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 2200);
+  setTimeout(() => el.classList.remove("show"), 2600);
 }
 function closeMask() { $("mask").classList.remove("show"); $("mask").innerHTML = ""; }
+function merchantById(id) { return MERCHANTS.find(m => m.id === id); }
 
-function statusTag(status, page) {
-  if (status === "finance") return '<span class="tag tag-blue">财务已辅助认领</span>';
-  if (status === "business") return '<span class="tag tag-green">已认领</span>';
-  if (page === "fin") return '<span class="tag tag-gray">未认领</span>';
-  return '<span class="muted">-</span>';
+function statusTag(status) {
+  if (status === "claimed") return '<span class="tag tag-green">已认领</span>';
+  return '<span class="tag tag-gray">待认领</span>';
+}
+
+function confClass(n) {
+  if (n >= cfg.threshold) return "conf-high";
+  if (n >= 60) return "conf-mid";
+  return "conf-low";
+}
+
+function notifySkipReason(t) {
+  if (t.creditedBy === "auto") return "自动匹配成功，已入账，认领状态为已认领；不推荐、不通知";
+  if (t.status === "claimed") return "已正式认领，不再通知";
+  if (!cfg.notifyEnabled) return "飞书通知已关闭";
+  if (t.muted) return "该笔已「不再提醒」";
+  if (!t.rec) return "无推荐，不发飞书；业务可在收款明细手工一键认领";
+  if (t.rec.confidence < cfg.threshold) return `推荐 ${t.rec.confidence}% 低于阈值 ${cfg.threshold}%，不发飞书；列表仍展示推荐`;
+  const m = merchantById(t.rec.merchantId);
+  if (!m || m.maintainerMode === "none" || !m.maintainer) return "推荐商户无业务维护人，不发飞书；流水仍待认领，推荐仍展示";
+  return "";
+}
+
+function wouldNotify(t) {
+  return !notifySkipReason(t);
+}
+
+function notifyTarget(t) {
+  if (!t.rec) return "";
+  const m = merchantById(t.rec.merchantId);
+  if (!m || !m.maintainer) return "";
+  if (m.maintainerMode === "multi") return `${m.maintainer}（主维护人）`;
+  return m.maintainer;
 }
 
 function counts() {
   return {
     unclaimed: txns.filter(t => t.status === "unclaimed").length,
-    finance: txns.filter(t => t.status === "finance").length,
-    business: txns.filter(t => t.status === "business").length,
+    claimed: txns.filter(t => t.status === "claimed").length,
     all: txns.length
   };
 }
@@ -834,11 +922,32 @@ function render() {
   document.querySelector(".avatar").textContent = view === "fin" ? "财" : "业";
   if (view === "biz") renderBiz();
   else if (view === "fin") renderFin();
+  else if (view === "cfg") renderCfg();
+  else if (view === "fs") renderFeishu();
   else renderSpec();
 }
 
+function recCols(t) {
+  if (!t.rec) {
+    return `<td class="muted">-</td><td class="muted">-</td><td class="muted">-</td><td class="muted">-</td>`;
+  }
+  return `
+    <td>${t.rec.merchantName}</td>
+    <td>${t.rec.bizLine}</td>
+    <td><span class="${confClass(t.rec.confidence)}">${t.rec.confidence}%</span></td>
+    <td><button class="btn-link" data-reason="${t.id}">查看</button></td>`;
+}
+
+function bizAction(t) {
+  if (t.status === "unclaimed") return `<button class="btn-link" data-claim="${t.id}">一键认领</button>`;
+  return '<span class="muted">-</span>';
+}
+
 function renderBiz() {
-  const rows = txns.filter(t => t.platform === bizPlatform);
+  const rows = txns.filter(t => t.platform === bizPlatform).filter(t => {
+    if (bizStatusFilter === "all") return true;
+    return t.status === bizStatusFilter;
+  });
   $("app").innerHTML = `
     <div class="crumb">Fund &nbsp;&gt;&nbsp; 业务入账 &nbsp;&gt;&nbsp; <b>收款明细</b></div>
     <section class="card table-card">
@@ -861,7 +970,11 @@ function renderBiz() {
           <button class="btn-text" id="bizExpand">${bizExpanded ? "收起" : "展开"}</button>
         </div>
         <div class="filters-extra">
-          <select><option>认领状态（全部）</option><option>未认领</option><option>财务已辅助认领</option><option>已认领</option></select>
+          <select id="bizStatusSelect">
+            <option value="all" ${bizStatusFilter==="all"?"selected":""}>认领状态（全部）</option>
+            <option value="unclaimed" ${bizStatusFilter==="unclaimed"?"selected":""}>待认领</option>
+            <option value="claimed" ${bizStatusFilter==="claimed"?"selected":""}>已认领</option>
+          </select>
         </div>
       </div>
     </section>
@@ -880,12 +993,14 @@ function renderBiz() {
             <tr>
               <th>支付平台</th><th>账户别名</th><th>主体名称</th><th>类型</th><th>二级类型</th>
               <th>交易ID</th><th>交易时间(UTC+8)</th><th>币种</th><th>金额</th><th>手续费</th>
-              <th>付款方名称</th><th>付款方账号</th><th>认领状态</th><th>操作</th>
+              <th>付款方名称</th><th>付款方账号</th>
+              <th>推荐商户</th><th>推荐业务线</th><th>推荐可信度</th><th>推荐原因</th>
+              <th>认领状态</th><th class="col-sticky">操作</th>
             </tr>
           </thead>
           <tbody>
             ${rows.map(t => `
-              <tr>
+              <tr class="${highlightId===t.id?"row-hl":""}" data-row="${t.id}">
                 <td>${t.platform}</td>
                 <td>${t.alias}</td>
                 <td>${t.entity}</td>
@@ -898,8 +1013,9 @@ function renderBiz() {
                 <td>${Number(t.fee).toFixed(2)}</td>
                 <td>${dash(t.payerName)}</td>
                 <td>${dash(t.payerAccount)}</td>
-                <td>${statusTag(t.status, "biz")}</td>
-                <td><button class="btn-link" data-claim="${t.id}">一键认领</button></td>
+                ${recCols(t)}
+                <td>${statusTag(t.status)}</td>
+                <td class="col-sticky">${bizAction(t)}</td>
               </tr>
             `).join("")}
           </tbody>
@@ -918,26 +1034,35 @@ function renderBiz() {
     </section>
   `;
   document.querySelectorAll(".platform-tab").forEach(btn => {
-    btn.onclick = () => { bizPlatform = btn.dataset.p; render(); };
+    btn.onclick = () => { bizPlatform = btn.dataset.p; highlightId = null; render(); };
   });
   $("bizExpand").onclick = () => { bizExpanded = !bizExpanded; render(); };
+  const st = $("bizStatusSelect");
+  if (st) st.onchange = () => { bizStatusFilter = st.value; render(); };
   document.querySelectorAll("[data-claim]").forEach(btn => {
-    btn.onclick = () => onBizClaim(btn.dataset.claim);
+    btn.onclick = () => openBizClaimModal(btn.dataset.claim);
   });
+  document.querySelectorAll("[data-reason]").forEach(btn => {
+    btn.onclick = () => openReason(btn.dataset.reason);
+  });
+  if (highlightId) {
+    const row = document.querySelector(`[data-row="${highlightId}"]`);
+    if (row) row.scrollIntoView({ block: "center" });
+  }
 }
 
 function renderFin() {
   const c = counts();
   const rows = txns.filter(t => {
     if (finStatusFilter === "unclaimed") return t.status === "unclaimed";
-    if (finStatusFilter === "finance") return t.status === "finance";
-    if (finStatusFilter === "business") return t.status === "business";
+    if (finStatusFilter === "claimed") return t.status === "claimed";
     return true;
   });
   $("app").innerHTML = `
     <div class="crumb">Fund &nbsp;&gt;&nbsp; 公司业务 &nbsp;&gt;&nbsp; <b>收款流水</b></div>
     <section class="card page-card">
       <div class="page-head-tab"><span>收款流水</span></div>
+      <div class="alert alert-info">本期不在本页做认领。本页仅查询与导出；业务在「收款明细」确认认领。</div>
       <div class="filter-grid">
         <div class="field"><label>客户代码</label><input placeholder="请输入" /></div>
         <div class="field"><label>客户名称</label><input placeholder="请输入" /></div>
@@ -957,9 +1082,8 @@ function renderFin() {
         <div class="field">
           <label>认领状态</label>
           <select id="finStatusSelect">
-            <option value="unclaimed" ${finStatusFilter==="unclaimed"?"selected":""}>未认领</option>
-            <option value="finance" ${finStatusFilter==="finance"?"selected":""}>财务已辅助认领</option>
-            <option value="business" ${finStatusFilter==="business"?"selected":""}>已认领</option>
+            <option value="unclaimed" ${finStatusFilter==="unclaimed"?"selected":""}>待认领</option>
+            <option value="claimed" ${finStatusFilter==="claimed"?"selected":""}>已认领</option>
             <option value="all" ${finStatusFilter==="all"?"selected":""}>全部</option>
           </select>
         </div>
@@ -970,9 +1094,8 @@ function renderFin() {
       </div>
       <div class="toolbar fin-toolbar">
         <div class="status-tabs">
-          <button class="status-tab ${finStatusFilter==="unclaimed"?"active":""}" data-st="unclaimed">未认领<b>${c.unclaimed}</b></button>
-          <button class="status-tab ${finStatusFilter==="finance"?"active":""}" data-st="finance">财务已辅助认领<b>${c.finance}</b></button>
-          <button class="status-tab ${finStatusFilter==="business"?"active":""}" data-st="business">已认领<b>${c.business}</b></button>
+          <button class="status-tab ${finStatusFilter==="unclaimed"?"active":""}" data-st="unclaimed">待认领<b>${c.unclaimed}</b></button>
+          <button class="status-tab ${finStatusFilter==="claimed"?"active":""}" data-st="claimed">已认领<b>${c.claimed}</b></button>
           <button class="status-tab ${finStatusFilter==="all"?"active":""}" data-st="all">全部<b>${c.all}</b></button>
         </div>
         <div class="toolbar-actions">
@@ -986,7 +1109,7 @@ function renderFin() {
               <th>主体名称</th><th>账号</th><th>收款机构</th><th>客户名称</th><th>客户代码</th>
               <th>商户 ID</th><th>交易号</th><th>收款方式</th><th>交易时间</th><th>收款币种</th>
               <th class="num">总额</th><th class="num">到账金额</th><th class="num">手续费</th>
-              <th>认领状态</th><th>推荐认领</th><th class="col-sticky">操作</th>
+              <th>认领状态</th>
             </tr>
           </thead>
           <tbody>
@@ -1002,12 +1125,10 @@ function renderFin() {
                 <td>${dash(t.method)}</td>
                 <td>${t.time}</td>
                 <td>${t.currency}</td>
-                <td class="amt num">${money(t.amount, t.currency)}</td>
-                <td class="amt num">${money(t.received, t.currency)}</td>
-                <td class="num">${money(t.fee, t.currency)}</td>
-                <td>${statusTag(t.status, "fin")}</td>
-                <td class="col-rec">${recCell(t)}</td>
-                <td class="col-sticky">${finAction(t)}</td>
+                <td class="amt num">$ ${money(t.amount)}</td>
+                <td class="amt num">$ ${money(t.received)}</td>
+                <td class="num">$ ${money(t.fee)}</td>
+                <td>${statusTag(t.status)}</td>
               </tr>
             `).join("")}
           </tbody>
@@ -1029,74 +1150,155 @@ function renderFin() {
   document.querySelectorAll(".status-tab").forEach(btn => {
     btn.onclick = () => { finStatusFilter = btn.dataset.st; render(); };
   });
-  document.querySelectorAll("[data-assist]").forEach(btn => {
-    btn.onclick = () => openFinanceClaim(btn.dataset.assist);
-  });
-  document.querySelectorAll("[data-view-claim]").forEach(btn => {
-    btn.onclick = () => openFinanceView(btn.dataset.viewClaim);
-  });
-  document.querySelectorAll("[data-revoke]").forEach(btn => {
-    btn.onclick = () => openFinanceRevoke(btn.dataset.revoke);
-  });
 }
 
-function recCell(t) {
-  if (t.status !== "unclaimed") return '<span class="muted">-</span>';
-  if (!t.rec) return '<span class="muted">暂无推荐</span>';
-  const cls = t.rec.level === "high" ? "conf-high" : t.rec.level === "mid" ? "conf-mid" : "conf-low";
-  const label = t.rec.level === "high" ? "高" : "中";
-  return `<div class="rec">
-    <div class="rec-main">${t.rec.merchantName}</div>
-    <div class="rec-sub"><span class="${cls}">${label} ${t.rec.confidence}%</span> · ${t.rec.bizLine}</div>
-  </div>`;
-}
-
-function finAction(t) {
-  if (t.status === "unclaimed") return `<button class="btn-link" data-assist="${t.id}">辅助认领</button>`;
-  if (t.status === "finance") return `<span class="act-links">
-    <button class="btn-link" data-view-claim="${t.id}">查看</button>
-    <button class="btn-link btn-link-danger" data-revoke="${t.id}">撤销认领</button>
-  </span>`;
-  return `<span class="muted" title="业务已最终认领，不可覆盖">-</span>`;
-}
-
-function onBizClaim(id) {
-  const t = txns.find(x => x.id === id);
-  if (t.status === "finance") openOverwriteConfirm(t);
-  else openBizClaimModal(t, false);
-}
-
-function openOverwriteConfirm(t) {
-  pendingOverwriteId = t.id;
-  $("mask").classList.add("show");
-  $("mask").innerHTML = `
-    <div class="modal">
-      <div class="modal-h">覆盖财务辅助认领？<button class="x" id="cx">×</button></div>
-      <div class="modal-b">
-        <div class="alert alert-warn">当前流水已由财务辅助认领，资金已入账。继续操作将覆盖财务结果。</div>
-        <div class="summary">
-          <div class="k">财务认领商户</div><div class="v">${t.financeClaim.merchantName}</div>
-          <div class="k">业务线</div><div class="v">${t.financeClaim.bizLine}</div>
-          <div class="k">认领人</div><div class="v">${t.financeClaim.operator}</div>
-          <div class="k">认领时间</div><div class="v">${t.financeClaim.time}</div>
+function renderCfg() {
+  $("app").innerHTML = `
+    <div class="crumb">Fund &nbsp;&gt;&nbsp; 系统 &nbsp;&gt;&nbsp; <b>推荐配置</b></div>
+    <section class="card cfg-card">
+      <div class="cfg-row">
+        <div>
+          <div>启用飞书通知</div>
+          <div class="note">关闭后不再发送；列表推荐不受影响。</div>
         </div>
-        <div>本次认领将自动：</div>
-        <ol class="steps">
-          <li>回退财务认领及入账</li>
-          <li>按你的认领结果重新充值</li>
-          <li>以业务认领作为最终结果</li>
-        </ol>
+        <button class="switch ${cfg.notifyEnabled?"on":""}" id="swNotify" type="button"><i></i></button>
       </div>
-      <div class="modal-f">
-        <button class="btn" id="cx2">取消</button>
-        <button class="btn btn-primary" id="go">继续认领</button>
+      <div class="cfg-row">
+        <div>
+          <div>推荐通知阈值</div>
+          <div class="note">默认 80%。调高：未达新阈值的不再通知。调低：已待认领且达新阈值的，从次日开始按规则通知，不立刻补发历史积压。</div>
+        </div>
+        <input type="number" id="threshold" min="1" max="100" value="${cfg.threshold}" />
+      </div>
+      <div class="cfg-row">
+        <div>
+          <div>通知频次</div>
+          <div class="note">固定规则：同一流水同一自然日最多 1 条飞书。未认领可重算推荐；当日已发过的不因重算再发第二条；次日按最新推荐通知。</div>
+        </div>
+        <span>1 次 / 流水 / 天</span>
+      </div>
+      <div class="cfg-row">
+        <div>
+          <div>原型演示日期</div>
+          <div class="note">当前按 ${cfg.today} 判断「当日是否已发」。</div>
+        </div>
+        <span>${cfg.today}</span>
+      </div>
+    </section>
+    <section class="card cfg-card" style="margin-top:12px">
+      <div class="cfg-row">
+        <div>
+          <div>模拟重算推荐</div>
+          <div class="note">未认领流水可重算。若当日已发过飞书，只更新列表推荐，不再发第二条。</div>
+        </div>
+        <button class="btn" id="btnRecalc">重算</button>
+      </div>
+      <div class="cfg-row">
+        <div>
+          <div>模拟进入次日</div>
+          <div class="note">次日按最新推荐、最新阈值重新判断是否通知。</div>
+        </div>
+        <button class="btn" id="btnNextDay">进入次日</button>
+      </div>
+    </section>
+  `;
+  $("swNotify").onclick = () => {
+    cfg.notifyEnabled = !cfg.notifyEnabled;
+    toast(cfg.notifyEnabled ? "已启用飞书通知" : "已关闭飞书通知");
+    render();
+  };
+  $("threshold").onchange = (e) => {
+    const prev = cfg.threshold;
+    const next = Math.min(100, Math.max(1, Number(e.target.value) || 80));
+    cfg.threshold = next;
+    if (next > prev) toast(`阈值已调至 ${next}%：未达新阈值的不再通知`);
+    else if (next < prev) toast(`阈值已调至 ${next}%：达新阈值的待认领流水从次日开始通知，不立刻补发`);
+    else toast("阈值未变化");
+  };
+  $("btnRecalc").onclick = () => {
+    const t = txns.find(x => x.id === "a1" && x.status === "unclaimed" && x.rec);
+    if (!t) { toast("没有可重算的未认领推荐"); return; }
+    t.rec.confidence = t.rec.confidence >= 99 ? 97 : t.rec.confidence + 1;
+    t.rec.reasons = [
+      `（已重算 ${cfg.today}）付款账号历史命中更新为 ${t.rec.confidence}%`,
+      ...t.rec.reasons.slice(1)
+    ];
+    if (t.notifiedDate === cfg.today) toast("推荐已更新；当日已发过通知，不再发第二条");
+    else toast("推荐已更新；该笔当日尚未发过，将按最新推荐通知");
+  };
+  $("btnNextDay").onclick = () => {
+    const d = new Date(cfg.today + "T00:00:00");
+    d.setDate(d.getDate() + 1);
+    cfg.today = d.toISOString().slice(0, 10);
+    txns.filter(t => wouldNotify(t)).forEach(t => { t.notifiedDate = cfg.today; });
+    toast(`已进入 ${cfg.today}，按最新推荐通知`);
+    render();
+  };
+}
+
+function renderFeishu() {
+  const cards = txns.filter(t => t.status === "unclaimed" && t.rec && t.rec.confidence >= cfg.threshold && t.notifiedDate === cfg.today && !t.muted && cfg.notifyEnabled && notifyTarget(t));
+  const skipped = txns.filter(t => t.platform === "Airwallex").map(t => ({ t, reason: notifySkipReason(t) })).filter(x => x.reason);
+  $("app").innerHTML = `
+    <div class="crumb">Fund &nbsp;&gt;&nbsp; 原型 &nbsp;&gt;&nbsp; <b>飞书通知示意</b></div>
+    <p class="lead" style="margin:0 0 16px;color:var(--text-2)">仅示意业务主维护人收到的卡片。飞书本身不能认领；点「立即认领」跳转收款明细并按交易号 + 渠道定位。</p>
+    <div class="fs-list">
+      ${cards.length ? cards.map(fsCard).join("") : `<div class="keep">当日没有符合规则的飞书卡片。可到「推荐配置」调整阈值或进入次日后再看。</div>`}
+    </div>
+    <div class="skip-list" style="margin-top:16px">
+      <h3 style="margin:0 0 8px;font-size:13px">Airwallex 示例：不发飞书的原因</h3>
+      <ul>
+        ${skipped.map(x => `<li><b>${x.t.txnNo}</b>：${x.reason}</li>`).join("")}
+      </ul>
+    </div>
+  `;
+  document.querySelectorAll("[data-fs-claim]").forEach(btn => {
+    btn.onclick = () => jumpFromFeishu(btn.dataset.fsClaim);
+  });
+  document.querySelectorAll("[data-fs-mute]").forEach(btn => {
+    btn.onclick = () => {
+      const t = txns.find(x => x.id === btn.dataset.fsMute);
+      if (!t) return;
+      t.muted = true;
+      toast("已停止该笔流水的飞书提醒，流水仍待认领");
+      render();
+    };
+  });
+}
+
+function fsCard(t) {
+  const to = notifyTarget(t);
+  const brief = t.rec.reasons[0] || "";
+  return `
+    <div class="fs-card">
+      <div class="fs-h">收款流水待认领</div>
+      <div class="fs-b">
+        <div class="fs-row"><div class="k">接收人</div><div>${to}</div></div>
+        <div class="fs-row"><div class="k">渠道</div><div>${t.platform}</div></div>
+        <div class="fs-row"><div class="k">交易号</div><div class="mono">${t.txnNo}</div></div>
+        <div class="fs-row"><div class="k">金额</div><div class="amt">${t.currency} ${Number(t.received).toFixed(2)}</div></div>
+        <div class="fs-row"><div class="k">付款人</div><div>${dash(t.payerName)}</div></div>
+        <div class="fs-row"><div class="k">推荐商户</div><div>${t.rec.merchantName}</div></div>
+        <div class="fs-row"><div class="k">推荐业务线</div><div>${t.rec.bizLine}</div></div>
+        <div class="fs-row"><div class="k">可信度</div><div class="${confClass(t.rec.confidence)}">${t.rec.confidence}%</div></div>
+        <div class="fs-row"><div class="k">简要原因</div><div>${brief}</div></div>
+      </div>
+      <div class="fs-actions">
+        <button class="btn btn-primary" data-fs-claim="${t.id}">立即认领</button>
+        <button class="btn" data-fs-mute="${t.id}">不再提醒</button>
       </div>
     </div>`;
-  $("cx").onclick = $("cx2").onclick = closeMask;
-  $("go").onclick = () => {
-    closeMask();
-    openBizClaimModal(t, true);
-  };
+}
+
+function jumpFromFeishu(id) {
+  const t = txns.find(x => x.id === id);
+  if (!t) return;
+  view = "biz";
+  bizPlatform = t.platform;
+  bizStatusFilter = "all";
+  highlightId = t.id;
+  toast(`已按渠道 ${t.platform} + 交易号定位`);
+  render();
 }
 
 function merchantOptions(selected) {
@@ -1106,109 +1308,61 @@ function lineOptions(selected) {
   return `<option value="">请选择业务线</option>` + BIZ_LINES.map(l => `<option ${l===selected?"selected":""}>${l}</option>`).join("");
 }
 
-function openBizClaimModal(t, fromFinance) {
-  activeId = t.id;
-  const line = fromFinance ? t.bizLine : "";
-  const merchantId = fromFinance ? t.merchantId : "";
-  const files = fromFinance ? t.attachments : [];
+function openReason(id) {
+  const t = txns.find(x => x.id === id);
+  if (!t || !t.rec) return;
   $("mask").classList.add("show");
   $("mask").innerHTML = `
     <div class="modal">
-      <div class="modal-h">一键认领<button class="x" id="cx">×</button></div>
+      <div class="modal-h">推荐原因<button class="x" id="cx">×</button></div>
       <div class="modal-b">
-        ${fromFinance ? `<div class="alert alert-info">已带出财务辅助认领的业务线、商户和附件，可修改后确认。确认后将覆盖财务认领并重新充值。</div>` : ""}
-        <div class="summary">
-          <div class="k">交易号</div><div class="v">${t.txnNo}</div>
-          <div class="k">金额</div><div class="v amt">${t.currency} ${Number(t.amount).toFixed(2)}</div>
+        <div class="rec-meta" style="margin-bottom:12px">
+          <div class="k">推荐商户</div><div>${t.rec.merchantName}（${t.rec.merchantId}）</div>
+          <div class="k">推荐业务线</div><div>${t.rec.bizLine}</div>
+          <div class="k">可信度</div><div class="${confClass(t.rec.confidence)}">${t.rec.confidence}%</div>
         </div>
-        <div class="form-grid">
-          <div class="form-row">
-            <label class="req">业务线</label>
-            <select id="fLine">${lineOptions(line)}</select>
-          </div>
-          <div class="form-row">
-            <label class="req">商户</label>
-            <select id="fMerchant"><option value="">请选择商户</option>${merchantOptions(merchantId)}</select>
-          </div>
-        </div>
-        <div class="form-row">
-          <label>上传附件</label>
-          <div class="file">
-            <span>${files.length ? files.map(f => `<span class="file-item">${f}</span>`).join("、") : "点击上传 / 拖拽文件"}</span>
-            <button class="btn" type="button">选择文件</button>
-          </div>
-        </div>
+        <ul class="reason">${t.rec.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
+        <p class="note">推荐基于历史认领数据。业务在弹窗中改业务线时，不自动改商户。</p>
       </div>
-      <div class="modal-f">
-        <button class="btn" id="cx2">取消</button>
-        <button class="btn btn-primary" id="ok">${fromFinance ? "确认覆盖并认领" : "确认认领"}</button>
-      </div>
+      <div class="modal-f"><button class="btn" id="cx2">关闭</button></div>
     </div>`;
   $("cx").onclick = $("cx2").onclick = closeMask;
-  $("ok").onclick = () => submitBizClaim(fromFinance);
 }
 
-function submitBizClaim(fromFinance) {
-  const t = txns.find(x => x.id === activeId);
-  const merchantId = $("fMerchant").value;
-  const bizLine = $("fLine").value;
-  if (!bizLine) { toast("请选择业务线"); return; }
-  if (!merchantId) { toast("请选择商户"); return; }
-  const m = MERCHANTS.find(x => x.id === merchantId);
-  t.status = "business";
-  t.merchantId = m.id;
-  t.merchantName = m.name;
-  t.customerName = m.name;
-  t.customerCode = t.customerCode || "M-" + m.id;
-  t.bizLine = bizLine;
-  t.financeClaim = fromFinance ? t.financeClaim : t.financeClaim;
-  closeMask();
-  toast(fromFinance ? "认领成功，已覆盖财务辅助认领并完成重新充值" : "认领成功，资金已充值到商户账户");
-  render();
-}
-
-function recCard(t) {
-  if (!t.rec) {
-    return `<div class="rec-card none">
-      <div class="rec-title">暂无可靠推荐</div>
-      <div class="muted" style="margin-top:8px">付款账号、付款人、Reference 均无足够历史命中，请人工选择业务线与商户。</div>
-    </div>`;
-  }
-  const mid = t.rec.level === "mid";
-  return `<div class="rec-card ${mid ? "mid" : ""}">
-    <div class="rec-head">
-      <div class="rec-title">智能推荐</div>
-      <span class="tag ${mid ? "tag-gray" : "tag-green"}">${mid ? "中" : "高"} ${t.rec.confidence}%</span>
-    </div>
-    <div class="rec-meta">
-      <div class="k">推荐业务线</div><div>${t.rec.bizLine}</div>
-      <div class="k">推荐商户</div><div>${t.rec.merchantName}（${t.rec.merchantId}）</div>
-    </div>
-    ${mid ? `<div class="muted" style="margin-top:8px">推荐可信度为中，请核对后再入账。系统已预填，可修改。</div>` : ""}
-    <div class="reason-label">推荐原因</div>
-    <ul class="reason">${t.rec.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
-  </div>`;
-}
-
-function openFinanceClaim(id) {
+function openBizClaimModal(id) {
   const t = txns.find(x => x.id === id);
-  activeId = id;
-  const prefill = t.rec && t.rec.level !== "low";
-  const line = prefill ? t.rec.bizLine : "";
-  const merchantId = prefill ? t.rec.merchantId : "";
+  if (!t || t.status !== "unclaimed") {
+    toast("该流水已认领，不能再认领");
+    return;
+  }
+  activeId = t.id;
+  claimDraft.voucherName = "";
+  const line = t.rec ? t.rec.bizLine : "";
+  const merchantId = t.rec ? t.rec.merchantId : "";
   $("mask").classList.add("show");
   $("mask").innerHTML = `
     <div class="modal wide">
-      <div class="modal-h">辅助认领<button class="x" id="cx">×</button></div>
+      <div class="modal-h">一键认领<button class="x" id="cx">×</button></div>
       <div class="modal-b">
-        <div class="alert alert-info">财务辅助认领确认后将立即入账，无需等待业务确认。业务后续仍可覆盖。</div>
+        ${t.rec ? `<div class="alert alert-info">已按智能推荐预填业务线和商户，可修改。推荐预填不代替转账凭证，确认时仍按现网校验。</div>` : `<div class="alert alert-warn">暂无推荐，请手工选择业务线和商户，并上传转账凭证。</div>`}
         <div class="summary">
           <div class="k">交易号</div><div class="v">${t.txnNo}</div>
-          <div class="k">到账金额</div><div class="v amt">${t.currency} ${Number(t.received).toFixed(2)}</div>
-          <div class="k">付款人</div><div class="v">${t.payerName}</div>
-          <div class="k">付款账号</div><div class="v">${t.payerAccount}</div>
+          <div class="k">金额</div><div class="v amt">${t.currency} ${Number(t.amount).toFixed(2)}</div>
+          <div class="k">渠道</div><div class="v">${t.platform}</div>
+          <div class="k">付款人</div><div class="v">${t.payerName || "-"}</div>
         </div>
-        ${recCard(t)}
+        ${t.rec ? `<div class="rec-card ${t.rec.confidence >= cfg.threshold ? "" : "mid"}">
+          <div class="rec-head">
+            <div class="rec-title">智能推荐</div>
+            <span class="tag ${t.rec.confidence >= cfg.threshold ? "tag-green" : "tag-gray"}">${t.rec.confidence}%</span>
+          </div>
+          <div class="rec-meta">
+            <div class="k">推荐业务线</div><div>${t.rec.bizLine}</div>
+            <div class="k">推荐商户</div><div>${t.rec.merchantName}（${t.rec.merchantId}）</div>
+          </div>
+          <div class="reason-label">推荐原因</div>
+          <ul class="reason">${t.rec.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
+        </div>` : ""}
         <div class="form-grid">
           <div class="form-row">
             <label class="req">业务线</label>
@@ -1219,133 +1373,47 @@ function openFinanceClaim(id) {
             <select id="fMerchant"><option value="">请选择商户</option>${merchantOptions(merchantId)}</select>
           </div>
         </div>
+        <p class="note" style="margin-top:-8px;margin-bottom:16px">修改业务线不会自动改商户。推荐来自历史数据，不随本次改选重算。</p>
         <div class="form-row">
-          <label>上传附件</label>
-          <div class="file"><span>点击上传 / 拖拽文件</span><button class="btn" type="button">选择文件</button></div>
+          <label class="req">转账凭证</label>
+          <div class="file">
+            <span id="voucherLabel">点击上传 / 拖拽文件</span>
+            <button class="btn" type="button" id="pickFile">选择文件</button>
+          </div>
         </div>
       </div>
       <div class="modal-f">
         <button class="btn" id="cx2">取消</button>
-        <button class="btn btn-primary" id="ok">确认辅助认领并入账</button>
+        <button class="btn btn-primary" id="ok">确认认领</button>
       </div>
     </div>`;
   $("cx").onclick = $("cx2").onclick = closeMask;
-  $("ok").onclick = submitFinanceClaim;
+  $("pickFile").onclick = () => {
+    claimDraft.voucherName = `转账凭证-${t.txnNo.slice(-6)}.pdf`;
+    $("voucherLabel").innerHTML = `<span class="file-item">${claimDraft.voucherName}</span>`;
+  };
+  $("ok").onclick = submitBizClaim;
 }
 
-function submitFinanceClaim() {
+function submitBizClaim() {
   const t = txns.find(x => x.id === activeId);
+  if (!t || t.status !== "unclaimed") { toast("该流水不能再认领"); closeMask(); return; }
   const merchantId = $("fMerchant").value;
   const bizLine = $("fLine").value;
   if (!bizLine) { toast("请选择业务线"); return; }
   if (!merchantId) { toast("请选择商户"); return; }
-  const m = MERCHANTS.find(x => x.id === merchantId);
-  t.status = "finance";
+  if (!claimDraft.voucherName) { toast("请上传转账凭证"); return; }
+  const m = merchantById(merchantId);
+  t.status = "claimed";
   t.merchantId = m.id;
   t.merchantName = m.name;
   t.customerName = m.name;
   t.customerCode = t.customerCode || "M-" + m.id;
   t.bizLine = bizLine;
-  t.attachments = t.attachments.length ? t.attachments : ["财务辅助认领附件.pdf"];
-  t.financeClaim = {
-    operator: "当前财务",
-    time: "2026-08-15 23:40:00",
-    bizLine,
-    merchantId: m.id,
-    merchantName: m.name
-  };
+  t.attachments = [claimDraft.voucherName];
+  highlightId = t.id;
   closeMask();
-  toast("辅助认领成功，资金已入账");
-  render();
-}
-
-function openFinanceView(id) {
-  const t = txns.find(x => x.id === id);
-  $("mask").classList.add("show");
-  $("mask").innerHTML = `
-    <div class="modal">
-      <div class="modal-h">辅助认领详情<button class="x" id="cx">×</button></div>
-      <div class="modal-b">
-        <div class="alert alert-info">该流水已由财务辅助认领并完成入账。业务拥有最终认领权，财务不可覆盖业务结果。业务尚未最终认领前，财务可撤销。</div>
-        <div class="detail-list">
-          <div class="detail-row"><div class="k">认领状态</div><div class="v">${statusTag("finance","fin")}</div></div>
-          <div class="detail-row"><div class="k">入账结果</div><div class="v">已入账</div></div>
-          <div class="detail-row"><div class="k">认领人</div><div class="v">${t.financeClaim.operator}</div></div>
-          <div class="detail-row"><div class="k">认领时间</div><div class="v">${t.financeClaim.time}</div></div>
-          <div class="detail-row"><div class="k">业务线</div><div class="v">${t.financeClaim.bizLine}</div></div>
-          <div class="detail-row"><div class="k">商户</div><div class="v">${t.financeClaim.merchantName}（${t.financeClaim.merchantId}）</div></div>
-        </div>
-      </div>
-      <div class="modal-f">
-        <button class="btn" id="cx2">关闭</button>
-        <button class="btn btn-danger" id="goRevoke">撤销认领</button>
-      </div>
-    </div>`;
-  $("cx").onclick = $("cx2").onclick = closeMask;
-  $("goRevoke").onclick = () => { closeMask(); openFinanceRevoke(id); };
-}
-
-function openFinanceRevoke(id) {
-  const t = txns.find(x => x.id === id);
-  if (!t || t.status !== "finance" || !t.financeClaim) {
-    toast("仅财务已辅助认领且业务未最终认领的流水可撤销");
-    return;
-  }
-  activeId = id;
-  $("mask").classList.add("show");
-  $("mask").innerHTML = `
-    <div class="modal">
-      <div class="modal-h">撤销辅助认领？<button class="x" id="cx">×</button></div>
-      <div class="modal-b">
-        <div class="alert alert-warn">撤销后将回退已入账金额，流水恢复为未认领。若商户已使用该资金、余额不足回退，撤销将失败。</div>
-        <div class="summary">
-          <div class="k">商户</div><div class="v">${t.financeClaim.merchantName}</div>
-          <div class="k">业务线</div><div class="v">${t.financeClaim.bizLine}</div>
-          <div class="k">金额</div><div class="v amt">${t.currency} ${Number(t.received).toFixed(2)}</div>
-          <div class="k">认领人</div><div class="v">${t.financeClaim.operator}</div>
-        </div>
-        <div class="form-row">
-          <label class="req">撤销原因</label>
-          <textarea id="revokeReason" placeholder="请填写撤销原因，便于对账"></textarea>
-        </div>
-      </div>
-      <div class="modal-f">
-        <button class="btn" id="cx2">取消</button>
-        <button class="btn btn-danger" id="ok">确认撤销</button>
-      </div>
-    </div>`;
-  $("cx").onclick = $("cx2").onclick = closeMask;
-  $("ok").onclick = submitFinanceRevoke;
-}
-
-function submitFinanceRevoke() {
-  const t = txns.find(x => x.id === activeId);
-  if (!t || t.status !== "finance") {
-    toast("当前状态不可撤销");
-    closeMask();
-    return;
-  }
-  const reason = ($("revokeReason").value || "").trim();
-  if (!reason) { toast("请填写撤销原因"); return; }
-  t.lastRevoke = {
-    operator: "当前财务",
-    time: "2026-08-17 14:20:00",
-    reason,
-    merchantName: t.financeClaim.merchantName,
-    merchantId: t.financeClaim.merchantId,
-    amount: t.received,
-    currency: t.currency
-  };
-  t.status = "unclaimed";
-  t.customerName = "";
-  t.customerCode = "";
-  t.merchantId = "";
-  t.merchantName = "";
-  t.bizLine = "";
-  t.attachments = [];
-  t.financeClaim = null;
-  closeMask();
-  toast("已撤销辅助认领，资金已回退");
+  toast("认领成功，资金已充值到商户账户");
   render();
 }
 
@@ -1353,102 +1421,64 @@ function renderSpec() {
   $("app").innerHTML = `
     <div class="crumb">Fund &nbsp;&gt;&nbsp; 原型 &nbsp;&gt;&nbsp; <b>设计说明</b></div>
     <div class="keep spec">
-      <h2>收款流水辅助认领 · 增量设计说明</h2>
-      <p class="lead">原则：财务辅助认领，业务最终认领。不改现有布局与主流程，只加必要状态、提示和推荐。</p>
+      <h2>收款流水智能推荐 · 增量设计说明</h2>
+      <p class="lead">本期方案：自动匹配失败后的待认领流水，做智能推荐；达阈值则飞书通知主维护人；业务在收款明细确认认领后才入账。推荐成功不等于自动匹配成功，不能入账。</p>
 
-      <h3>1. 两个页面怎么改</h3>
+      <h3>1. 本期改哪里</h3>
       <table>
-        <thead><tr><th>页面</th><th>保持不变</th><th>本次增量</th></tr></thead>
+        <thead><tr><th>页面</th><th>保持不变</th><th>本期</th></tr></thead>
         <tbody>
           <tr>
             <td>业务入账 → 收款明细</td>
-            <td>渠道 Tab、查询区、Excel 上传/模板/导出、原有列、「一键认领」</td>
-            <td>新增「认领状态」列；财务已认领时出覆盖确认；认领弹窗回填财务结果</td>
+            <td>渠道 Tab、查询、Excel、原有列、一键认领、凭证校验</td>
+            <td>增加推荐商户 / 业务线 / 可信度 / 原因；有推荐则预填；正式认领一次；已认领不再出一键认领</td>
           </tr>
           <tr>
             <td>公司业务 → 收款流水</td>
-            <td>原查询字段、导出、原有列</td>
-            <td>默认未认领优先；新增认领状态 / 推荐认领 / 操作；辅助认领弹窗含推荐</td>
+            <td>查询与导出</td>
+            <td>不做认领。旧原型的财务辅助认领 / 撤销 / 覆盖已从方案中删除</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>2. 新增字段</h3>
+      <h3>2. 认领状态只有两个</h3>
+      <p>认领状态只表示资金认领生命周期：<span class="tag tag-gray">待认领</span> 还要业务确认；<span class="tag tag-green">已认领</span> 已经入账，不能再认领。自动匹配成功也记为已认领，不单列状态。</p>
+      <p>推荐不是认领状态。有推荐、低于阈值、无推荐，只要还没入账，都是待认领。推荐放在推荐列和一键认领预填里，不另做「推荐认领」状态。</p>
       <table>
-        <thead><tr><th>位置</th><th>字段</th><th>说明</th></tr></thead>
+        <thead><tr><th>结果</th><th>认领状态</th><th>是否推荐</th><th>是否飞书</th><th>是否入账</th></tr></thead>
         <tbody>
-          <tr><td>业务页表格</td><td>认领状态</td><td>财务已辅助认领 / 已认领；未认领显示 “-”</td></tr>
-          <tr><td>业务页展开筛选</td><td>认领状态</td><td>放在「展开」内，不挤占现有首行查询</td></tr>
-          <tr><td>财务页表格</td><td>认领状态</td><td>未认领 / 财务已辅助认领 / 业务已认领</td></tr>
-          <tr><td>财务页表格</td><td>推荐认领</td><td>仅未认领展示商户 + 可信度；已认领为 “-”</td></tr>
-          <tr><td>财务页表格</td><td>操作</td><td>未认领：辅助认领；财务已认领：查看 / 撤销认领；已认领：不可操作</td></tr>
-          <tr><td>财务页工具条</td><td>状态快捷筛选</td><td>默认「未认领」</td></tr>
+          <tr><td>自动匹配成功</td><td>已认领</td><td>否</td><td>否</td><td>是，立刻充值</td></tr>
+          <tr><td>推荐成功（达阈值并通知）</td><td>待认领</td><td>是</td><td>是</td><td>否，等业务确认认领</td></tr>
+          <tr><td>有推荐但低于阈值 / 无维护人 / 无推荐</td><td>待认领</td><td>有则展示</td><td>否</td><td>否，业务可手工一键认领</td></tr>
+          <tr><td>业务确认认领</td><td>已认领</td><td>历史推荐可保留展示</td><td>否</td><td>是</td></tr>
         </tbody>
       </table>
 
-      <h3>3. 新增 Tag</h3>
-      <p>
-        <span class="tag tag-blue">财务已辅助认领</span>
-        蓝色，表示已入账但不是最终业务决策。<br/><br/>
-        <span class="tag tag-green">已认领</span>
-        绿色，业务最终认领结果。业务页、财务页都展示。<br/><br/>
-        <span class="tag tag-gray">未认领</span>
-        灰色，仅财务页展示，便于在「全部」中扫读。业务页未认领不打 Tag，避免 15 万行噪音。
-      </p>
-
-      <h3>4. 新增状态</h3>
-      <table>
-        <thead><tr><th>状态</th><th>入账</th><th>业务可否再认领</th><th>财务可否辅助认领</th><th>最终结果</th></tr></thead>
-        <tbody>
-          <tr><td>未认领</td><td>否</td><td>是</td><td>是</td><td>无</td></tr>
-          <tr><td>财务已辅助认领</td><td>是，立刻入账</td><td>是，覆盖</td><td>可查看、可撤销</td><td>临时有效，可被业务覆盖或财务撤销</td></tr>
-          <tr><td>业务已认领</td><td>是</td><td>沿用现有一键认领</td><td>否</td><td>最终结果</td></tr>
-        </tbody>
-      </table>
-
-      <h3>5. 弹窗交互</h3>
-      <p><b>业务覆盖确认：</b>仅当状态=财务已辅助认领，点「一键认领」先出确认，再打开原认领弹窗。</p>
-      <p><b>业务认领弹窗：</b>若来自财务结果，默认带出业务线、商户、附件，允许修改。提示「确认后将覆盖财务认领并重新充值」。</p>
-      <p><b>财务辅助认领弹窗：</b>展示流水摘要 + 推荐卡 + 业务线/商户/附件。高/中可信度预填；无推荐不预填。主按钮为「确认辅助认领并入账」。</p>
-      <p><b>财务查看弹窗：</b>展示认领人、时间、商户、入账结果。可从详情发起撤销，不可覆盖业务已认领。</p>
-      <p><b>财务撤销弹窗：</b>仅财务已辅助认领可操作。确认后回退入账、恢复未认领，必须填写撤销原因。业务已认领不可撤销。</p>
-
-      <h3>6. 按钮交互</h3>
-      <table>
-        <thead><tr><th>按钮</th><th>出现条件</th><th>行为</th></tr></thead>
-        <tbody>
-          <tr><td>一键认领</td><td>业务页所有行，保持现网</td><td>未认领直接弹窗；财务已认领先确认再弹窗</td></tr>
-          <tr><td>确认覆盖并认领</td><td>业务弹窗（覆盖场景）</td><td>回退财务入账，按业务结果重充，状态变为业务已认领</td></tr>
-          <tr><td>辅助认领</td><td>财务页且未认领</td><td>打开辅助认领弹窗，确认后立刻入账</td></tr>
-          <tr><td>查看</td><td>财务页且财务已辅助认领</td><td>只读详情，可从详情进入撤销</td></tr>
-          <tr><td>撤销认领</td><td>财务页且财务已辅助认领</td><td>填写原因后回退入账，状态回到未认领</td></tr>
-          <tr><td>导出 / Excel</td><td>原位置不动</td><td>不改</td></tr>
-        </tbody>
-      </table>
-      <p>不做批量认领，避免误入账。</p>
-
-      <h3>7. 推荐信息展示</h3>
-      <p>表格内：一行商户名 + 高/中可信度，方便扫读。</p>
-      <p>弹窗内：推荐业务线、推荐商户、可信度、推荐原因（付款账号历史频次为最强信号）。</p>
-      <p>预填规则：≥90% 直接预填；60%–89% 预填并提示核对；无可靠推荐不预填。</p>
-      <p>推荐优先级：付款账号历史认领 → Reference/备注/附言中的商户或客户代码 → 付款人名称+历史商户 → 收款账户+币种+付款账号 → 主体+收款机构（弱特征，不单独定商户）。</p>
-
-      <h3>8. 页面优化原因</h3>
+      <h3>3. 飞书规则</h3>
       <ul>
-        <li>业务页只加 Tag，是为了让业务知道「财务已经先入账」，但不打断现有一键认领。</li>
-        <li>覆盖前提示，是避免业务不知道会回退财务入账。</li>
-        <li>弹窗回填财务结果，是减少重复选择，不是锁定财务决定。</li>
-        <li>财务页默认未认领，是把人力放到真正拖慢到账的流水上。</li>
-        <li>推荐预填，是降低选商户成本；仍可改，避免错入账。</li>
-        <li>业务已认领财务不可操作，是守住「业务最终认领权」。</li>
-        <li>两个菜单保持独立，只共享流水状态，符合现有信息架构。</li>
+        <li>无业务维护人：不发飞书，流水仍待认领，推荐仍展示。</li>
+        <li>多名维护人：只通知主维护人。</li>
+        <li>无推荐或低于阈值：不发飞书；低于阈值的推荐仍在列表展示。</li>
+        <li>链接带交易号 + 渠道，用于收款明细按渠道 Tab 定位行。</li>
+        <li>「不再提醒」只停该笔飞书，不影响待认领和列表推荐。</li>
+        <li>同一流水同一天最多 1 条；未认领可重算，当日不因重算再发第二条；次日按最新推荐通知。</li>
+        <li>阈值调高：未达新阈值的不再通知。阈值调低：从次日开始按规则通知，不立刻补发历史积压。</li>
+      </ul>
+
+      <h3>4. 认领规则（沿用现网）</h3>
+      <ul>
+        <li>业务线 + 商户决定入账账户；金额等于流水金额，不可改。</li>
+        <li>必须上传转账凭证；推荐预填不代替凭证。</li>
+        <li>确认认领后立即充值，无审批。</li>
+        <li>一笔流水只能正式认领一次；纠错走现有回滚，本期不改。</li>
+        <li>业务在弹窗中改业务线，不自动改商户（推荐基于历史数据）。</li>
       </ul>
     </div>
   `;
 }
 
 document.querySelectorAll(".menu-item").forEach(btn => {
-  btn.onclick = () => { view = btn.dataset.view; closeMask(); render(); };
+  btn.onclick = () => { view = btn.dataset.view; closeMask(); highlightId = null; render(); };
 });
 $("mask").addEventListener("click", (e) => { if (e.target.id === "mask") closeMask(); });
 render();
