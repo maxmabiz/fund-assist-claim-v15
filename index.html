@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store" />
   <title>Fund · 收款流水智能推荐</title>
   <style>
     :root {
@@ -424,8 +425,10 @@
     tbody tr.row-hl { background: #e6f4ff; outline: 2px solid #91caff; outline-offset: -2px; }
     .note { color: var(--text-2); font-size: var(--font-sm); line-height: 1.6; margin-top: 8px; }
     .fs-list { display: flex; flex-direction: column; gap: 0; }
-    .skip-list { max-width: 720px; background: #fff; border-radius: 8px; padding: 16px 20px; }
+    .skip-list { max-width: 720px; background: #fff; border-radius: 8px; padding: 16px 20px; margin-top: 16px; }
     .skip-list li { margin: 8px 0; line-height: 1.6; }
+    .fs-sec { max-width: 720px; font-size: 13px; font-weight: 600; margin: 20px 0 8px; }
+    .fs-sec:first-of-type { margin-top: 0; }
     .fs-card {
       max-width: 560px; background: #fff; border: 1px solid var(--line);
       border-radius: 8px; overflow: hidden; margin-bottom: 16px;
@@ -434,6 +437,11 @@
     .fs-b { padding: 16px; }
     .fs-row { display: grid; grid-template-columns: 108px 1fr; gap: 8px; margin-bottom: 8px; }
     .fs-row .k { color: var(--text-2); }
+    .fs-copy { line-height: 1.75; margin: 0 0 12px; }
+    .fs-stat { display: flex; gap: 24px; margin: 0 0 12px; }
+    .fs-stat span { color: var(--text-2); }
+    .fs-stat b { display: block; font-size: 20px; color: var(--text); margin-top: 2px; }
+    .fs-stat b.high { color: #389e0d; }
     .fs-actions { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); }
     .cfg-card { max-width: 720px; }
     .cfg-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
@@ -493,7 +501,8 @@ const MERCHANTS = [
 
 const PLATFORMS = ["Wise", "Airwallex", "Payoneer", "Worldfirst", "PingPong", "Others", "HSBC USD (Swift)", "Bank Wise EUR (SEPA)"];
 
-let view = "biz";
+const qView = new URLSearchParams(location.search).get("view");
+let view = ["biz", "cfg", "fs", "spec"].includes(qView) ? qView : "biz";
 let bizPlatform = "Airwallex";
 let finStatusFilter = "unclaimed";
 let bizStatusFilter = "all";
@@ -1239,14 +1248,23 @@ function renderCfg() {
 function renderFeishu() {
   const cards = txns.filter(t => t.status === "unclaimed" && t.rec && t.rec.confidence >= cfg.threshold && t.notifiedDate === cfg.today && !t.muted && cfg.notifyEnabled && notifyTarget(t));
   const skipped = txns.filter(t => t.platform === "Airwallex").map(t => ({ t, reason: notifySkipReason(t) })).filter(x => x.reason);
+  const pending = txns.filter(t => t.status === "unclaimed");
+  const high = pending.filter(t => t.rec && t.rec.confidence >= cfg.threshold);
   $("app").innerHTML = `
     <div class="crumb">Fund &nbsp;&gt;&nbsp; 原型 &nbsp;&gt;&nbsp; <b>飞书通知示意</b></div>
-    <p class="lead" style="margin:0 0 16px;color:var(--text-2)">仅示意业务主维护人收到的卡片。飞书本身不能认领；点「立即认领」跳转收款明细并按交易号 + 渠道定位。</p>
+    <p class="lead" style="margin:0 0 16px;color:var(--text-2)">两种通知方案并列示意，飞书本身不能认领。</p>
+
+    <div class="fs-sec">方案一：每日汇总</div>
+    <p class="note" style="margin:0 0 12px;max-width:720px">每人每天只发 1 条。不列单笔交易，只告知截止当前的待认领总量，以及推荐可信度 ≥ ${cfg.threshold}% 的条数。</p>
+    ${fsDigestCard(pending.length, high.length)}
+
+    <div class="fs-sec">方案二：逐笔通知</div>
+    <p class="note" style="margin:0 0 12px;max-width:720px">达阈值的每一笔待认领流水发一张卡片。点「立即认领」跳转收款明细，按交易号 + 渠道定位。</p>
     <div class="fs-list">
-      ${cards.length ? cards.map(fsCard).join("") : `<div class="keep">当日没有符合规则的飞书卡片。可到「推荐配置」调整阈值或进入次日后再看。</div>`}
+      ${cards.length ? cards.map(fsCard).join("") : `<div class="keep">当日没有符合规则的逐笔卡片。可到「推荐配置」调整阈值或进入次日后再看。</div>`}
     </div>
-    <div class="skip-list" style="margin-top:16px">
-      <h3 style="margin:0 0 8px;font-size:13px">Airwallex 示例：不发飞书的原因</h3>
+    <div class="skip-list">
+      <h3 style="margin:0 0 8px;font-size:13px">Airwallex 示例：逐笔不发飞书的原因</h3>
       <ul>
         ${skipped.map(x => `<li><b>${x.t.txnNo}</b>：${x.reason}</li>`).join("")}
       </ul>
@@ -1264,6 +1282,8 @@ function renderFeishu() {
       render();
     };
   });
+  const go = $("fsDigestGo");
+  if (go) go.onclick = jumpToPendingList;
 }
 
 function fsCard(t) {
@@ -1290,6 +1310,25 @@ function fsCard(t) {
     </div>`;
 }
 
+function fsDigestCard(pendingCount, highCount) {
+  return `
+    <div class="fs-card">
+      <div class="fs-h">待认领流水汇总</div>
+      <div class="fs-b">
+        <div class="fs-row"><div class="k">接收人</div><div>林晓</div></div>
+        <div class="fs-row"><div class="k">统计截止</div><div>${cfg.today}</div></div>
+        <div class="fs-stat">
+          <div><span>待认领</span><b>${pendingCount}</b></div>
+          <div><span>推荐 ≥ ${cfg.threshold}%</span><b class="high">${highCount}</b></div>
+        </div>
+        <p class="fs-copy">截止当前，您有 <b>${pendingCount}</b> 条收款流水待认领，其中 <b>${highCount}</b> 条推荐可信度在 ${cfg.threshold}% 以上，请及时认领。</p>
+      </div>
+      <div class="fs-actions">
+        <button class="btn btn-primary" id="fsDigestGo">去认领</button>
+      </div>
+    </div>`;
+}
+
 function jumpFromFeishu(id) {
   const t = txns.find(x => x.id === id);
   if (!t) return;
@@ -1298,6 +1337,16 @@ function jumpFromFeishu(id) {
   bizStatusFilter = "all";
   highlightId = t.id;
   toast(`已按渠道 ${t.platform} + 交易号定位`);
+  render();
+}
+
+function jumpToPendingList() {
+  view = "biz";
+  bizPlatform = "Airwallex";
+  bizStatusFilter = "unclaimed";
+  bizExpanded = true;
+  highlightId = null;
+  toast("已打开收款明细，并筛选待认领");
   render();
 }
 
