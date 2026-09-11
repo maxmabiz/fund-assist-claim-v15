@@ -153,6 +153,7 @@
       width: 100%;
       padding-top: 8px;
       gap: 8px;
+      flex-wrap: wrap;
     }
     .filters.expanded .filters-extra { display: flex; }
 
@@ -395,6 +396,12 @@
     .reason { margin: 8px 0 0; padding-left: 20px; color: var(--text); line-height: 1.65; }
     .reason li { margin: 4px 0; }
     .reason-label { margin-top: 10px; color: var(--text-2); }
+    .rec-hint {
+      color: #cf1322;
+      font-size: var(--font);
+      line-height: 1.7;
+      margin: 0 0 16px;
+    }
     .file {
       border: 1px dashed var(--line-strong); border-radius: 6px; padding: 10px 12px;
       color: var(--text-2); display: flex; justify-content: space-between; align-items: center; gap: 12px;
@@ -471,7 +478,7 @@
       <div class="menu-foot">
         <button class="menu-item" data-view="fs">飞书通知示意</button>
         <button class="menu-item" data-view="spec">设计说明</button>
-        <div class="ver">v1.2.0</div>
+        <div class="ver">v1.3.0</div>
       </div>
     </aside>
     <div class="main">
@@ -508,7 +515,9 @@ let view = ["biz", "cfg", "fs", "spec"].includes(qView) ? qView : "biz";
 let bizPlatform = "Airwallex";
 let finStatusFilter = "unclaimed";
 let bizStatusFilter = "all";
-let bizExpanded = false;
+let bizRecLineFilter = "all";
+let bizRecMerchantFilter = "all";
+let bizExpanded = true;
 let activeId = null;
 let highlightId = null;
 let claimDraft = { voucherName: "" };
@@ -940,13 +949,47 @@ function render() {
 
 function recCols(t) {
   if (!t.rec) {
-    return `<td class="muted">-</td><td class="muted">-</td><td class="muted">-</td><td class="muted">-</td>`;
+    return `<td class="muted">-</td><td class="muted">-</td>`;
   }
   return `
-    <td>${t.rec.merchantName}</td>
     <td>${t.rec.bizLine}</td>
-    <td><span class="${confClass(t.rec.confidence)}">${t.rec.confidence}%</span></td>
-    <td><button class="btn-link" data-reason="${t.id}">查看</button></td>`;
+    <td>${t.rec.merchantName}</td>`;
+}
+
+function recLineText(t) { return t.rec ? t.rec.bizLine : "-"; }
+function recMerchantText(t) { return t.rec ? t.rec.merchantName : "-"; }
+function statusText(t) { return t.status === "claimed" ? "已认领" : "待认领"; }
+function csvCell(v) {
+  const s = v == null || v === "" ? "-" : String(v);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+function filterBizRows() {
+  return txns.filter(t => t.platform === bizPlatform).filter(t => {
+    if (bizStatusFilter !== "all" && t.status !== bizStatusFilter) return false;
+    if (bizRecLineFilter !== "all" && (!t.rec || t.rec.bizLine !== bizRecLineFilter)) return false;
+    if (bizRecMerchantFilter !== "all" && (!t.rec || t.rec.merchantId !== bizRecMerchantFilter)) return false;
+    return true;
+  });
+}
+function exportBizCsv(rows) {
+  const headers = ["支付平台","账户别名","主体名称","类型","二级类型","交易ID","交易时间(UTC+8)","币种","金额","手续费","付款方名称","付款方账号","推荐业务线","推荐商户","认领状态"];
+  const lines = [headers.map(csvCell).join(",")];
+  rows.forEach(t => {
+    lines.push([
+      t.platform, t.alias, t.entity, t.type || "-", t.subType || "-",
+      t.txnNo, t.time, t.currency, Number(t.amount).toFixed(2), Number(t.fee).toFixed(2),
+      t.payerName || "-", t.payerAccount || "-",
+      recLineText(t), recMerchantText(t), statusText(t)
+    ].map(csvCell).join(","));
+  });
+  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `收款明细-${bizPlatform}-推荐字段.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`已导出 ${rows.length} 条，含推荐业务线、推荐商户`);
 }
 
 function bizAction(t) {
@@ -955,10 +998,7 @@ function bizAction(t) {
 }
 
 function renderBiz() {
-  const rows = txns.filter(t => t.platform === bizPlatform).filter(t => {
-    if (bizStatusFilter === "all") return true;
-    return t.status === bizStatusFilter;
-  });
+  const rows = filterBizRows();
   $("app").innerHTML = `
     <div class="crumb">Fund &nbsp;&gt;&nbsp; 业务入账 &nbsp;&gt;&nbsp; <b>收款明细</b></div>
     <section class="card table-card">
@@ -976,8 +1016,8 @@ function renderBiz() {
           <input placeholder="最大金额" />
         </div>
         <div class="filter-actions">
-          <button class="btn btn-primary">搜索</button>
-          <button class="btn">重置</button>
+          <button class="btn btn-primary" id="bizSearch">搜索</button>
+          <button class="btn" id="bizReset">重置</button>
           <button class="btn-text" id="bizExpand">${bizExpanded ? "收起" : "展开"}</button>
         </div>
         <div class="filters-extra">
@@ -985,6 +1025,14 @@ function renderBiz() {
             <option value="all" ${bizStatusFilter==="all"?"selected":""}>认领状态（全部）</option>
             <option value="unclaimed" ${bizStatusFilter==="unclaimed"?"selected":""}>待认领</option>
             <option value="claimed" ${bizStatusFilter==="claimed"?"selected":""}>已认领</option>
+          </select>
+          <select id="bizRecLineSelect">
+            <option value="all" ${bizRecLineFilter==="all"?"selected":""}>推荐业务线（全部）</option>
+            ${BIZ_LINES.map(l => `<option value="${l}" ${bizRecLineFilter===l?"selected":""}>${l}</option>`).join("")}
+          </select>
+          <select id="bizRecMerchantSelect">
+            <option value="all" ${bizRecMerchantFilter==="all"?"selected":""}>推荐商户（全部）</option>
+            ${MERCHANTS.map(m => `<option value="${m.id}" ${bizRecMerchantFilter===m.id?"selected":""}>${m.name}</option>`).join("")}
           </select>
         </div>
       </div>
@@ -995,7 +1043,7 @@ function renderBiz() {
         <div class="toolbar-actions">
           <button class="btn">手动上传Excel</button>
           <button class="btn">下载Excel模版</button>
-          <button class="btn btn-primary">导出数据</button>
+          <button class="btn btn-primary" id="bizExport">导出数据</button>
         </div>
       </div>
       <div class="table-wrap">
@@ -1005,7 +1053,7 @@ function renderBiz() {
               <th>支付平台</th><th>账户别名</th><th>主体名称</th><th>类型</th><th>二级类型</th>
               <th>交易ID</th><th>交易时间(UTC+8)</th><th>币种</th><th>金额</th><th>手续费</th>
               <th>付款方名称</th><th>付款方账号</th>
-              <th>推荐商户</th><th>推荐业务线</th><th>推荐可信度</th><th>推荐原因</th>
+              <th>推荐业务线</th><th>推荐商户</th>
               <th>认领状态</th><th class="col-sticky">操作</th>
             </tr>
           </thead>
@@ -1050,11 +1098,27 @@ function renderBiz() {
   $("bizExpand").onclick = () => { bizExpanded = !bizExpanded; render(); };
   const st = $("bizStatusSelect");
   if (st) st.onchange = () => { bizStatusFilter = st.value; render(); };
+  const recLine = $("bizRecLineSelect");
+  if (recLine) recLine.onchange = () => { bizRecLineFilter = recLine.value; render(); };
+  const recMerch = $("bizRecMerchantSelect");
+  if (recMerch) recMerch.onchange = () => { bizRecMerchantFilter = recMerch.value; render(); };
+  $("bizSearch").onclick = () => {
+    bizStatusFilter = $("bizStatusSelect").value;
+    bizRecLineFilter = $("bizRecLineSelect").value;
+    bizRecMerchantFilter = $("bizRecMerchantSelect").value;
+    toast("已按条件查询");
+    render();
+  };
+  $("bizReset").onclick = () => {
+    bizStatusFilter = "all";
+    bizRecLineFilter = "all";
+    bizRecMerchantFilter = "all";
+    toast("已重置认领状态、推荐业务线、推荐商户");
+    render();
+  };
+  $("bizExport").onclick = () => exportBizCsv(rows);
   document.querySelectorAll("[data-claim]").forEach(btn => {
     btn.onclick = () => openBizClaimModal(btn.dataset.claim);
-  });
-  document.querySelectorAll("[data-reason]").forEach(btn => {
-    btn.onclick = () => openReason(btn.dataset.reason);
   });
   if (highlightId) {
     const row = document.querySelector(`[data-row="${highlightId}"]`);
@@ -1337,6 +1401,8 @@ function jumpFromFeishu(id) {
   view = "biz";
   bizPlatform = t.platform;
   bizStatusFilter = "all";
+  bizRecLineFilter = "all";
+  bizRecMerchantFilter = "all";
   highlightId = t.id;
   toast(`已按渠道 ${t.platform} + 交易号定位`);
   render();
@@ -1346,6 +1412,8 @@ function jumpToPendingList() {
   view = "biz";
   bizPlatform = "Airwallex";
   bizStatusFilter = "unclaimed";
+  bizRecLineFilter = "all";
+  bizRecMerchantFilter = "all";
   bizExpanded = true;
   highlightId = null;
   toast("已打开收款明细，并筛选待认领");
@@ -1395,17 +1463,16 @@ function openBizClaimModal(id) {
     <div class="modal wide">
       <div class="modal-h">一键认领<button class="x" id="cx">×</button></div>
       <div class="modal-b">
-        ${t.rec ? `<div class="alert alert-info">已按智能推荐预填业务线和商户，可修改。推荐预填不代替转账凭证，确认时仍按现网校验。</div>` : `<div class="alert alert-warn">暂无推荐，请手工选择业务线和商户，并上传转账凭证。</div>`}
+        ${t.rec ? "" : `<div class="alert alert-warn">暂无推荐，请手工选择业务线和商户，并上传转账凭证。</div>`}
         <div class="summary">
           <div class="k">交易号</div><div class="v">${t.txnNo}</div>
           <div class="k">金额</div><div class="v amt">${t.currency} ${Number(t.amount).toFixed(2)}</div>
           <div class="k">渠道</div><div class="v">${t.platform}</div>
           <div class="k">付款人</div><div class="v">${t.payerName || "-"}</div>
         </div>
-        ${t.rec ? `<div class="rec-card ${t.rec.confidence >= cfg.threshold ? "" : "mid"}">
+        ${t.rec ? `<div class="rec-card">
           <div class="rec-head">
             <div class="rec-title">智能推荐</div>
-            <span class="tag ${t.rec.confidence >= cfg.threshold ? "tag-green" : "tag-gray"}">${t.rec.confidence}%</span>
           </div>
           <div class="rec-meta">
             <div class="k">推荐业务线</div><div>${t.rec.bizLine}</div>
@@ -1413,7 +1480,8 @@ function openBizClaimModal(id) {
           </div>
           <div class="reason-label">推荐原因</div>
           <ul class="reason">${t.rec.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
-        </div>` : ""}
+        </div>
+        <p class="rec-hint">系统推荐仅供参考，您可直接采用预填结果，也可按本笔流水实际情况修改。</p>` : ""}
         <div class="form-grid">
           <div class="form-row">
             <label class="req">业务线</label>
@@ -1424,7 +1492,7 @@ function openBizClaimModal(id) {
             <select id="fMerchant"><option value="">请选择商户</option>${merchantOptions(merchantId)}</select>
           </div>
         </div>
-        <p class="note" style="margin-top:-8px;margin-bottom:16px">修改业务线不会自动改商户。推荐来自历史数据，不随本次改选重算。</p>
+        ${t.rec ? `<p class="note" style="margin-top:-8px;margin-bottom:16px">已按智能推荐预填业务线和商户，可修改。</p>` : ""}
         <div class="form-row">
           <label class="req">转账凭证</label>
           <div class="file">
@@ -1482,7 +1550,7 @@ function renderSpec() {
           <tr>
             <td>业务入账 → 收款明细</td>
             <td>渠道 Tab、查询、Excel、原有列、一键认领、凭证校验</td>
-            <td>增加推荐商户 / 业务线 / 可信度 / 原因；有推荐则预填；正式认领一次；已认领不再出一键认领</td>
+            <td>增加推荐业务线 / 推荐商户；展开区可按这两项查询；导出含这两列；有推荐则预填；正式认领一次；已认领不再出一键认领</td>
           </tr>
           <tr>
             <td>公司业务 → 收款流水</td>
