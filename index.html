@@ -346,13 +346,13 @@
     .summary .k { color: var(--text-2); }
     .summary .v { min-width: 0; word-break: break-all; line-height: 1.45; }
     .form-row { margin-bottom: 16px; }
-    .form-row label { display: block; margin-bottom: 6px; }
+    .form-row > label { display: block; margin-bottom: 6px; }
     .req::before { content: "*"; color: var(--error); margin-right: 4px; }
-    .form-row input, .form-row select, .form-row textarea {
+    .form-row input:not([type="radio"]), .form-row select, .form-row textarea {
       width: 100%; height: 40px; border: 1px solid var(--line-strong); border-radius: var(--radius);
       padding: 0 11px; outline: none; font-size: var(--font);
     }
-    .form-row input:focus, .form-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
+    .form-row input:not([type="radio"]):focus, .form-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
     .form-row textarea {
       height: 96px; padding: 8px 11px; resize: vertical; line-height: 1.5;
     }
@@ -373,6 +373,39 @@
       margin-bottom: 16px;
     }
     .form-grid .form-row { margin-bottom: 0; }
+    .radio-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 20px;
+      min-height: 40px;
+    }
+    .radio {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      cursor: pointer;
+      font-weight: 400;
+      color: var(--text);
+    }
+    .combo { position: relative; }
+    .combo-list {
+      position: fixed;
+      z-index: 80;
+      background: #fff;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      box-shadow: 0 6px 16px rgba(0,0,0,.08), 0 3px 6px rgba(0,0,0,.12);
+      max-height: 240px;
+      overflow: auto;
+    }
+    .combo-opt {
+      display: block; width: 100%; text-align: left; border: 0; background: #fff;
+      padding: 8px 12px; cursor: pointer; font-size: var(--font); color: var(--text);
+    }
+    .combo-opt:hover, .combo-opt.active { background: #e6f4ff; }
+    .combo-empty { padding: 8px 12px; color: var(--text-2); }
     .steps { margin: 8px 0 0; padding-left: 22px; line-height: 1.8; }
     .detail-list { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
     .detail-row {
@@ -478,7 +511,7 @@
       <div class="menu-foot">
         <button class="menu-item" data-view="fs">飞书通知示意</button>
         <button class="menu-item" data-view="spec">设计说明</button>
-        <div class="ver">v1.3.0</div>
+        <div class="ver">v1.4.0</div>
       </div>
     </aside>
     <div class="main">
@@ -498,14 +531,14 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const BIZ_LINES = ["广告", "代发", "商城", "其他"];
+const BIZ_LINES = ["广告", "履约", "拒付"];
 const MERCHANTS = [
   { id: "14229", name: "星辰出海-广告主账户", line: "广告", maintainer: "林晓", maintainerMode: "single" },
-  { id: "3639", name: "万里汇零售测试中", line: "商城", maintainer: "王敏", maintainerMode: "multi" },
-  { id: "88021", name: "迅达供应链-代发账户", line: "代发", maintainer: "", maintainerMode: "none" },
+  { id: "3639", name: "万里汇零售测试中", line: "履约", maintainer: "王敏", maintainerMode: "multi" },
+  { id: "88021", name: "迅达供应链-代发账户", line: "履约", maintainer: "", maintainerMode: "none" },
   { id: "55210", name: "北辰广告-欧洲账户", line: "广告", maintainer: "赵倩", maintainerMode: "single" },
-  { id: "71008", name: "华贸商城-主账户", line: "商城", maintainer: "周宁", maintainerMode: "single" },
-  { id: "22617", name: "远航支付-美国账户", line: "其他", maintainer: "吴洋", maintainerMode: "single" },
+  { id: "71008", name: "华贸商城-主账户", line: "履约", maintainer: "周宁", maintainerMode: "single" },
+  { id: "22617", name: "远航支付-美国账户", line: "拒付", maintainer: "吴洋", maintainerMode: "single" },
 ];
 
 const PLATFORMS = ["Wise", "Airwallex", "Payoneer", "Worldfirst", "PingPong", "Others", "HSBC USD (Swift)", "Bank Wise EUR (SEPA)"];
@@ -516,7 +549,7 @@ let bizPlatform = "Airwallex";
 let finStatusFilter = "unclaimed";
 let bizStatusFilter = "all";
 let bizRecLineFilter = "all";
-let bizRecMerchantFilter = "all";
+let bizRecMerchantFilter = "";
 let bizExpanded = true;
 let activeId = null;
 let highlightId = null;
@@ -593,7 +626,7 @@ const txns = [
     notifiedDate: "",
     rec: {
       confidence: 94,
-      bizLine: "代发",
+      bizLine: "履约",
       merchantId: "88021",
       merchantName: "迅达供应链-代发账户",
       reasons: [
@@ -629,7 +662,7 @@ const txns = [
     notifiedDate: "2026-09-01",
     rec: {
       confidence: 91,
-      bizLine: "商城",
+      bizLine: "履约",
       merchantId: "3639",
       merchantName: "万里汇零售测试中",
       reasons: [
@@ -782,14 +815,14 @@ const txns = [
     customerCode: "WF-RT-009",
     merchantId: "3639",
     merchantName: "万里汇零售测试中",
-    bizLine: "商城",
+    bizLine: "履约",
     status: "claimed",
     attachments: ["转账凭证-万里汇.png"],
     muted: false,
     notifiedDate: "",
     rec: {
       confidence: 99,
-      bizLine: "商城",
+      bizLine: "履约",
       merchantId: "3639",
       merchantName: "万里汇零售测试中",
       reasons: ["付款账号历史 210 次全部认领至该商户"]
@@ -815,7 +848,7 @@ const txns = [
     customerCode: "HM-SC-008",
     merchantId: "71008",
     merchantName: "华贸商城-主账户",
-    bizLine: "商城",
+    bizLine: "履约",
     status: "claimed",
     attachments: ["转账凭证-商城.xlsx"],
     muted: false,
@@ -869,7 +902,7 @@ const txns = [
     customerCode: "YH-US-004",
     merchantId: "22617",
     merchantName: "远航支付-美国账户",
-    bizLine: "其他",
+    bizLine: "拒付",
     status: "claimed",
     attachments: ["转账凭证-美国账户.png"],
     muted: false,
@@ -889,7 +922,12 @@ function toast(msg) {
   el.classList.add("show");
   setTimeout(() => el.classList.remove("show"), 2600);
 }
-function closeMask() { $("mask").classList.remove("show"); $("mask").innerHTML = ""; }
+function closeMask() {
+  $("mask").classList.remove("show");
+  $("mask").innerHTML = "";
+  const list = $("fMerchantList");
+  if (list) list.remove();
+}
 function merchantById(id) { return MERCHANTS.find(m => m.id === id); }
 
 function statusTag(status) {
@@ -968,7 +1006,7 @@ function filterBizRows() {
   return txns.filter(t => t.platform === bizPlatform).filter(t => {
     if (bizStatusFilter !== "all" && t.status !== bizStatusFilter) return false;
     if (bizRecLineFilter !== "all" && (!t.rec || t.rec.bizLine !== bizRecLineFilter)) return false;
-    if (bizRecMerchantFilter !== "all" && (!t.rec || t.rec.merchantId !== bizRecMerchantFilter)) return false;
+    if (bizRecMerchantFilter && (!t.rec || t.rec.merchantId !== bizRecMerchantFilter)) return false;
     return true;
   });
 }
@@ -1030,10 +1068,7 @@ function renderBiz() {
             <option value="all" ${bizRecLineFilter==="all"?"selected":""}>推荐业务线（全部）</option>
             ${BIZ_LINES.map(l => `<option value="${l}" ${bizRecLineFilter===l?"selected":""}>${l}</option>`).join("")}
           </select>
-          <select id="bizRecMerchantSelect">
-            <option value="all" ${bizRecMerchantFilter==="all"?"selected":""}>推荐商户（全部）</option>
-            ${MERCHANTS.map(m => `<option value="${m.id}" ${bizRecMerchantFilter===m.id?"selected":""}>${m.name}</option>`).join("")}
-          </select>
+          <input id="bizRecMerchantInput" placeholder="推荐商户ID" value="${bizRecMerchantFilter.replace(/"/g, "&quot;")}" />
         </div>
       </div>
     </section>
@@ -1100,19 +1135,23 @@ function renderBiz() {
   if (st) st.onchange = () => { bizStatusFilter = st.value; render(); };
   const recLine = $("bizRecLineSelect");
   if (recLine) recLine.onchange = () => { bizRecLineFilter = recLine.value; render(); };
-  const recMerch = $("bizRecMerchantSelect");
-  if (recMerch) recMerch.onchange = () => { bizRecMerchantFilter = recMerch.value; render(); };
-  $("bizSearch").onclick = () => {
+  const applyBizFilters = () => {
     bizStatusFilter = $("bizStatusSelect").value;
     bizRecLineFilter = $("bizRecLineSelect").value;
-    bizRecMerchantFilter = $("bizRecMerchantSelect").value;
+    bizRecMerchantFilter = $("bizRecMerchantInput").value.trim();
+  };
+  $("bizSearch").onclick = () => {
+    applyBizFilters();
     toast("已按条件查询");
     render();
+  };
+  $("bizRecMerchantInput").onkeydown = (e) => {
+    if (e.key === "Enter") $("bizSearch").click();
   };
   $("bizReset").onclick = () => {
     bizStatusFilter = "all";
     bizRecLineFilter = "all";
-    bizRecMerchantFilter = "all";
+    bizRecMerchantFilter = "";
     toast("已重置认领状态、推荐业务线、推荐商户");
     render();
   };
@@ -1402,7 +1441,7 @@ function jumpFromFeishu(id) {
   bizPlatform = t.platform;
   bizStatusFilter = "all";
   bizRecLineFilter = "all";
-  bizRecMerchantFilter = "all";
+  bizRecMerchantFilter = "";
   highlightId = t.id;
   toast(`已按渠道 ${t.platform} + 交易号定位`);
   render();
@@ -1413,18 +1452,94 @@ function jumpToPendingList() {
   bizPlatform = "Airwallex";
   bizStatusFilter = "unclaimed";
   bizRecLineFilter = "all";
-  bizRecMerchantFilter = "all";
+  bizRecMerchantFilter = "";
   bizExpanded = true;
   highlightId = null;
   toast("已打开收款明细，并筛选待认领");
   render();
 }
 
-function merchantOptions(selected) {
-  return MERCHANTS.map(m => `<option value="${m.id}" ${m.id===selected?"selected":""}>${m.name}（${m.id}）</option>`).join("");
+function merchantLabel(m) {
+  return `${m.name}（${m.id}）`;
 }
-function lineOptions(selected) {
-  return `<option value="">请选择业务线</option>` + BIZ_LINES.map(l => `<option ${l===selected?"selected":""}>${l}</option>`).join("");
+function filterMerchants(q) {
+  const s = (q || "").trim();
+  if (!s) return MERCHANTS;
+  return MERCHANTS.filter(m => m.id.includes(s) || m.name.includes(s));
+}
+function placeMerchantList() {
+  const input = $("fMerchantQ");
+  const list = $("fMerchantList");
+  if (!input || !list) return;
+  const r = input.getBoundingClientRect();
+  list.style.left = `${r.left}px`;
+  list.style.top = `${r.bottom + 4}px`;
+  list.style.width = `${r.width}px`;
+}
+function renderMerchantList(q) {
+  let list = $("fMerchantList");
+  if (!list) {
+    list = document.createElement("div");
+    list.id = "fMerchantList";
+    list.className = "combo-list";
+    document.body.appendChild(list);
+  }
+  const rows = filterMerchants(q);
+  const selected = $("fMerchant").value;
+  list.innerHTML = rows.length
+    ? rows.map(m => `<button type="button" class="combo-opt ${m.id===selected?"active":""}" data-mid="${m.id}">${merchantLabel(m)}</button>`).join("")
+    : `<div class="combo-empty">无匹配商户</div>`;
+  list.hidden = false;
+  placeMerchantList();
+  list.querySelectorAll(".combo-opt").forEach(btn => {
+    btn.onmousedown = (e) => { e.preventDefault(); pickMerchant(btn.dataset.mid); };
+  });
+}
+function pickMerchant(id) {
+  const m = merchantById(id);
+  $("fMerchant").value = m ? m.id : "";
+  $("fMerchantQ").value = m ? merchantLabel(m) : "";
+  const list = $("fMerchantList");
+  if (list) list.hidden = true;
+}
+function bindMerchantCombo(selectedId) {
+  pickMerchant(selectedId);
+  const q = $("fMerchantQ");
+  q.onfocus = () => {
+    const m = merchantById($("fMerchant").value);
+    const query = m && q.value === merchantLabel(m) ? "" : q.value;
+    renderMerchantList(query);
+  };
+  q.oninput = () => {
+    $("fMerchant").value = "";
+    renderMerchantList(q.value);
+  };
+  q.onkeydown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const typed = q.value.trim();
+      const exact = MERCHANTS.find(m => m.id === typed);
+      const rows = filterMerchants(typed);
+      if (exact) pickMerchant(exact.id);
+      else if (rows.length === 1) pickMerchant(rows[0].id);
+    }
+    if (e.key === "Escape") {
+      const list = $("fMerchantList");
+      if (list) list.hidden = true;
+    }
+  };
+  q.onblur = () => {
+    setTimeout(() => {
+      const typed = (q.value || "").trim();
+      const exact = MERCHANTS.find(m => m.id === typed);
+      if (exact) { pickMerchant(exact.id); return; }
+      const m = merchantById($("fMerchant").value);
+      if (m) q.value = merchantLabel(m);
+    }, 120);
+  };
+}
+function lineRadios(selected) {
+  return BIZ_LINES.map(l => `<label class="radio"><input type="radio" name="fLine" value="${l}" ${l===selected?"checked":""} /><span>${l}</span></label>`).join("");
 }
 
 function openReason(id) {
@@ -1485,14 +1600,19 @@ function openBizClaimModal(id) {
         <div class="form-grid">
           <div class="form-row">
             <label class="req">业务线</label>
-            <select id="fLine">${lineOptions(line)}</select>
+            <div class="radio-row" id="fLine">
+              ${lineRadios(line)}
+            </div>
           </div>
           <div class="form-row">
             <label class="req">商户</label>
-            <select id="fMerchant"><option value="">请选择商户</option>${merchantOptions(merchantId)}</select>
+            <div class="combo" id="fMerchantCombo">
+              <input type="hidden" id="fMerchant" value="${merchantId}" />
+              <input id="fMerchantQ" placeholder="请输入商户ID搜索" autocomplete="off" />
+            </div>
           </div>
         </div>
-        ${t.rec ? `<p class="note" style="margin-top:-8px;margin-bottom:16px">已按智能推荐预填业务线和商户，可修改。</p>` : ""}
+        ${t.rec ? `<p class="note" style="margin-top:-8px;margin-bottom:16px">已按智能推荐预选业务线和商户，可修改</p>` : ""}
         <div class="form-row">
           <label class="req">转账凭证</label>
           <div class="file">
@@ -1512,13 +1632,20 @@ function openBizClaimModal(id) {
     $("voucherLabel").innerHTML = `<span class="file-item">${claimDraft.voucherName}</span>`;
   };
   $("ok").onclick = submitBizClaim;
+  bindMerchantCombo(merchantId);
 }
 
 function submitBizClaim() {
   const t = txns.find(x => x.id === activeId);
   if (!t || t.status !== "unclaimed") { toast("该流水不能再认领"); closeMask(); return; }
-  const merchantId = $("fMerchant").value;
-  const bizLine = $("fLine").value;
+  let merchantId = $("fMerchant").value;
+  if (!merchantId) {
+    const typed = ($("fMerchantQ")?.value || "").trim();
+    const exact = MERCHANTS.find(m => m.id === typed);
+    if (exact) merchantId = exact.id;
+  }
+  const picked = document.querySelector('#fLine input[name="fLine"]:checked');
+  const bizLine = picked ? picked.value : "";
   if (!bizLine) { toast("请选择业务线"); return; }
   if (!merchantId) { toast("请选择商户"); return; }
   if (!claimDraft.voucherName) { toast("请上传转账凭证"); return; }
@@ -1600,6 +1727,14 @@ document.querySelectorAll(".menu-item").forEach(btn => {
   btn.onclick = () => { view = btn.dataset.view; closeMask(); highlightId = null; render(); };
 });
 $("mask").addEventListener("click", (e) => { if (e.target.id === "mask") closeMask(); });
+document.addEventListener("mousedown", (e) => {
+  const list = $("fMerchantList");
+  const box = $("fMerchantCombo");
+  if (!list || list.hidden) return;
+  if (box && box.contains(e.target)) return;
+  if (list.contains(e.target)) return;
+  list.hidden = true;
+});
 render();
 </script>
 </body>
