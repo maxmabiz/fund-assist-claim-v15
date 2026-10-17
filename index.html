@@ -348,11 +348,11 @@
     .form-row { margin-bottom: 16px; }
     .form-row > label { display: block; margin-bottom: 6px; }
     .req::before { content: "*"; color: var(--error); margin-right: 4px; }
-    .form-row input:not([type="radio"]), .form-row select, .form-row textarea {
+    .form-row input:not([type="radio"]):not([type="range"]), .form-row select, .form-row textarea {
       width: 100%; height: 40px; border: 1px solid var(--line-strong); border-radius: var(--radius);
       padding: 0 11px; outline: none; font-size: var(--font);
     }
-    .form-row input:not([type="radio"]):focus, .form-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
+    .form-row input:not([type="radio"]):not([type="range"]):focus, .form-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
     .form-row textarea {
       height: 96px; padding: 8px 11px; resize: vertical; line-height: 1.5;
     }
@@ -496,6 +496,62 @@
       position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s;
     }
     .switch.on i { left: 22px; }
+    .fee-block {
+      background: #fafafa; border: 1px solid var(--line); border-radius: 8px;
+      padding: 14px 16px; margin: 0 0 16px;
+      display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start;
+    }
+    .fee-block[hidden] { display: none; }
+    .fee-left { min-width: 0; }
+    .fee-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .fee-head .ttl { font-weight: 600; }
+    .fee-left .note { margin-top: 6px; }
+    .fee-right { width: 280px; margin: 0; }
+    .fee-right[hidden] { display: block; visibility: hidden; pointer-events: none; }
+    .fee-ratio-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .fee-ratio-head label { margin: 0; }
+    .fee-stepper {
+      display: inline-flex; align-items: stretch; height: 32px;
+      border: 1px solid var(--line-strong); border-radius: var(--radius);
+      overflow: hidden; background: #fff;
+    }
+    .fee-stepper:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.15); }
+    .fee-step {
+      width: 28px; border: 0; background: #fff; color: var(--text);
+      cursor: pointer; line-height: 1; flex-shrink: 0;
+    }
+    .fee-step:hover { background: #f5f5f5; color: var(--primary); }
+    .fee-step:disabled { color: var(--text-3); cursor: not-allowed; background: #fff; }
+    .fee-step-field { display: flex; align-items: center; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+    .form-row .fee-stepper input, .form-row .fee-stepper input:focus {
+      width: 48px; height: 30px; border: 0; box-shadow: none; padding: 0 2px;
+      text-align: right; font-variant-numeric: tabular-nums; outline: none;
+    }
+    .fee-pct-unit { color: var(--text-2); padding: 0 8px 0 2px; }
+    .fee-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; margin: 12px 0 6px; padding: 0;
+      border: 0; border-radius: 2px; outline: none; cursor: pointer;
+      background: #e5e5e5; accent-color: var(--primary);
+    }
+    .fee-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; border: 2px solid var(--primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,.12); cursor: pointer;
+    }
+    .fee-slider::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; border: 2px solid var(--primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,.12); cursor: pointer;
+    }
+    .fee-slider::-moz-range-track { height: 4px; background: transparent; border: 0; }
+    .fee-ratio-marks { display: flex; justify-content: space-between; color: var(--text-2); font-size: var(--font-sm); }
+    .fee-calc { margin-top: 8px; color: var(--text-2); }
+    .fee-calc b { color: var(--text); font-variant-numeric: tabular-nums; }
+    .fee-err { color: #cf1322; margin: 6px 0 0; line-height: 1.6; }
+    .fee-sum { margin: 12px 0 0; line-height: 1.8; }
+    .fee-sum .amt { font-weight: 600; }
   </style>
 </head>
 <body>
@@ -784,6 +840,7 @@ const txns = [
     merchantName: "星辰出海-广告主账户",
     bizLine: "广告",
     status: "claimed",
+    creditedBy: "biz",
     attachments: ["转账凭证-广告到账.pdf"],
     muted: false,
     notifiedDate: "",
@@ -817,6 +874,8 @@ const txns = [
     merchantName: "万里汇零售测试中",
     bizLine: "履约",
     status: "claimed",
+    creditedBy: "biz",
+    companyFee: 80.00,
     attachments: ["转账凭证-万里汇.png"],
     muted: false,
     notifiedDate: "",
@@ -850,6 +909,7 @@ const txns = [
     merchantName: "华贸商城-主账户",
     bizLine: "履约",
     status: "claimed",
+    creditedBy: "biz",
     attachments: ["转账凭证-商城.xlsx"],
     muted: false,
     notifiedDate: "",
@@ -877,6 +937,7 @@ const txns = [
     merchantName: "北辰广告-欧洲账户",
     bizLine: "广告",
     status: "claimed",
+    creditedBy: "biz",
     attachments: ["转账凭证-欧洲广告.pdf"],
     muted: false,
     notifiedDate: "",
@@ -904,6 +965,7 @@ const txns = [
     merchantName: "远航支付-美国账户",
     bizLine: "拒付",
     status: "claimed",
+    creditedBy: "biz",
     attachments: ["转账凭证-美国账户.png"],
     muted: false,
     notifiedDate: "",
@@ -916,6 +978,8 @@ function money(n) {
   return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function dash(v) { return v && v !== "-" ? v : '<span class="muted">-</span>'; }
+function feeCap(amount) { return Math.round(Number(amount) * 0.04 * 100) / 100; }
+function companyFeeOf(t) { return Number(t.companyFee) > 0 ? Number(t.companyFee) : 0; }
 function toast(msg) {
   const el = $("toast");
   el.textContent = msg;
@@ -1011,14 +1075,14 @@ function filterBizRows() {
   });
 }
 function exportBizCsv(rows) {
-  const headers = ["支付平台","账户别名","主体名称","类型","二级类型","交易ID","交易时间(UTC+8)","币种","金额","手续费","付款方名称","付款方账号","推荐业务线","推荐商户","认领状态"];
+  const headers = ["支付平台","账户别名","主体名称","类型","二级类型","交易ID","交易时间(UTC+8)","币种","金额","手续费","付款方名称","付款方账号","推荐业务线","推荐商户","认领状态","公司承担手续费"];
   const lines = [headers.map(csvCell).join(",")];
   rows.forEach(t => {
     lines.push([
       t.platform, t.alias, t.entity, t.type || "-", t.subType || "-",
       t.txnNo, t.time, t.currency, Number(t.amount).toFixed(2), Number(t.fee).toFixed(2),
       t.payerName || "-", t.payerAccount || "-",
-      recLineText(t), recMerchantText(t), statusText(t)
+      recLineText(t), recMerchantText(t), statusText(t), companyFeeOf(t) ? Number(t.companyFee).toFixed(2) : "-"
     ].map(csvCell).join(","));
   });
   const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -1032,6 +1096,7 @@ function exportBizCsv(rows) {
 
 function bizAction(t) {
   if (t.status === "unclaimed") return `<button class="btn-link" data-claim="${t.id}">一键认领</button>`;
+  if (t.creditedBy !== "auto") return `<button class="btn-link" data-rollback="${t.id}">匹配退回</button>`;
   return '<span class="muted">-</span>';
 }
 
@@ -1089,7 +1154,7 @@ function renderBiz() {
               <th>交易ID</th><th>交易时间(UTC+8)</th><th>币种</th><th>金额</th><th>手续费</th>
               <th>付款方名称</th><th>付款方账号</th>
               <th>推荐业务线</th><th>推荐商户</th>
-              <th>认领状态</th><th class="col-sticky">操作</th>
+              <th>认领状态</th><th>公司承担手续费</th><th class="col-sticky">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -1109,6 +1174,7 @@ function renderBiz() {
                 <td>${dash(t.payerAccount)}</td>
                 ${recCols(t)}
                 <td>${statusTag(t.status)}</td>
+                <td>${companyFeeOf(t) ? `<span class="amt">${Number(t.companyFee).toFixed(2)}</span>` : '<span class="muted">-</span>'}</td>
                 <td class="col-sticky">${bizAction(t)}</td>
               </tr>
             `).join("")}
@@ -1158,6 +1224,9 @@ function renderBiz() {
   $("bizExport").onclick = () => exportBizCsv(rows);
   document.querySelectorAll("[data-claim]").forEach(btn => {
     btn.onclick = () => openBizClaimModal(btn.dataset.claim);
+  });
+  document.querySelectorAll("[data-rollback]").forEach(btn => {
+    btn.onclick = () => openRollbackModal(btn.dataset.rollback);
   });
   if (highlightId) {
     const row = document.querySelector(`[data-row="${highlightId}"]`);
@@ -1613,6 +1682,32 @@ function openBizClaimModal(id) {
           </div>
         </div>
         ${t.rec ? `<p class="note" style="margin-top:-8px;margin-bottom:16px">已按智能推荐预选业务线和商户，可修改</p>` : ""}
+        <div class="fee-block" id="feeBlock" ${line==="履约"?"":"hidden"}>
+          <div class="fee-left">
+            <div class="fee-head">
+              <div class="ttl">公司承担手续费</div>
+              <button class="switch" id="swFee" type="button"><i></i></button>
+            </div>
+            <div class="note">开启后可拖动滑杆粗调，或用右侧数字精确到 0.01%。手续费按本笔流水金额自动计算，认领成功后补足充值到商户资金账户。</div>
+          </div>
+          <div class="form-row fee-right" id="feeAmountRow" hidden>
+            <div class="fee-ratio-head">
+              <label>承担比例</label>
+              <div class="fee-stepper">
+                <button class="fee-step" id="fFeeMinus" type="button" aria-label="减少 0.01%">−</button>
+                <div class="fee-step-field">
+                  <input id="fFeePct" type="text" inputmode="decimal" value="0.00" aria-label="承担比例" />
+                  <span class="fee-pct-unit">%</span>
+                </div>
+                <button class="fee-step" id="fFeePlus" type="button" aria-label="增加 0.01%">+</button>
+              </div>
+            </div>
+            <input id="fFeeRatio" class="fee-slider" type="range" min="0" max="4" step="0.01" value="0" />
+            <div class="fee-ratio-marks"><span>0%</span><span>4%</span></div>
+            <div class="fee-calc">手续费金额 <b id="fFeeAmtText">${t.currency} 0.00</b></div>
+            <p class="fee-err" id="feeErr" hidden></p>
+          </div>
+        </div>
         <div class="form-row">
           <label class="req">转账凭证</label>
           <div class="file">
@@ -1633,6 +1728,155 @@ function openBizClaimModal(id) {
   };
   $("ok").onclick = submitBizClaim;
   bindMerchantCombo(merchantId);
+  bindFeeControls(t);
+}
+
+function currentClaimLine() {
+  const picked = document.querySelector('#fLine input[name="fLine"]:checked');
+  return picked ? picked.value : "";
+}
+function bindFeeControls(t) {
+  const resetRatio = () => {
+    applyFeeRatio(t, 0);
+    showFeeError("");
+  };
+  const sync = () => {
+    const isFy = currentClaimLine() === "履约";
+    $("feeBlock").hidden = !isFy;
+    if (!isFy) {
+      $("swFee").classList.remove("on");
+      $("feeAmountRow").hidden = true;
+      resetRatio();
+    }
+  };
+  document.querySelectorAll('#fLine input[name="fLine"]').forEach(r => { r.onchange = sync; });
+  $("swFee").onclick = () => {
+    if (currentClaimLine() !== "履约") return;
+    $("swFee").classList.toggle("on");
+    const on = $("swFee").classList.contains("on");
+    $("feeAmountRow").hidden = !on;
+    if (!on) {
+      resetRatio();
+    } else {
+      applyFeeRatio(t, Number($("fFeeRatio").value) || 0);
+      $("fFeePct").focus();
+      $("fFeePct").select();
+    }
+  };
+  $("fFeeRatio").oninput = () => {
+    applyFeeRatio(t, Number($("fFeeRatio").value) || 0);
+    validateFeeAmount(t.amount);
+  };
+  $("fFeePct").oninput = () => {
+    const parsed = parseFeePctInput();
+    if (parsed.empty) {
+      showFeeError("");
+      return;
+    }
+    if (parsed.error) {
+      showFeeError(parsed.error);
+      return;
+    }
+    applyFeeRatio(t, parsed.ratio, { formatInput: false });
+    showFeeError("");
+  };
+  $("fFeePct").onblur = () => {
+    const raw = Number(($("fFeePct").value || "").trim().replace(/%/g, ""));
+    applyFeeRatio(t, Number.isFinite(raw) ? raw : 0);
+    validateFeeAmount(t.amount);
+  };
+  $("fFeePct").onkeydown = (e) => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    stepFeeRatio(t, e.key === "ArrowUp" ? 1 : -1);
+  };
+  bindFeeStepHold($("fFeeMinus"), () => stepFeeRatio(t, -1));
+  bindFeeStepHold($("fFeePlus"), () => stepFeeRatio(t, 1));
+  applyFeeRatio(t, 0);
+}
+function showFeeError(msg) {
+  const el = $("feeErr");
+  if (!el) return;
+  if (msg) {
+    el.hidden = false;
+    el.textContent = msg;
+  } else {
+    el.hidden = true;
+    el.textContent = "";
+  }
+}
+const FEE_RATIO_MIN = 0;
+const FEE_RATIO_MAX = 4;
+const FEE_RATIO_STEP = 0.01;
+function roundFeeRatio(n) {
+  return Math.round(n * 100) / 100;
+}
+function clampFeeRatio(n) {
+  if (!Number.isFinite(n)) return 0;
+  return roundFeeRatio(Math.min(FEE_RATIO_MAX, Math.max(FEE_RATIO_MIN, n)));
+}
+function feeFromRatio(amount, ratio) {
+  return Math.round(Number(amount) * (clampFeeRatio(ratio) / 100) * 100) / 100;
+}
+function parseFeePctInput() {
+  const raw = ($("fFeePct")?.value || "").trim().replace(/%/g, "");
+  if (!raw) return { empty: true };
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return { error: "承担比例格式不正确" };
+  if (n < FEE_RATIO_MIN || n > FEE_RATIO_MAX) return { error: "承担比例须在 0%～4% 之间" };
+  return { ratio: roundFeeRatio(n) };
+}
+function applyFeeRatio(t, ratio, { formatInput } = {}) {
+  const r = clampFeeRatio(ratio);
+  const el = $("fFeeRatio");
+  if (!el) return r;
+  el.value = String(r);
+  const pct = ((r - FEE_RATIO_MIN) / (FEE_RATIO_MAX - FEE_RATIO_MIN)) * 100;
+  el.style.background = `linear-gradient(to right, var(--primary) ${pct}%, #e5e5e5 ${pct}%)`;
+  if (formatInput !== false) $("fFeePct").value = r.toFixed(2);
+  $("fFeeAmtText").textContent = `${t.currency} ${feeFromRatio(t.amount, r).toFixed(2)}`;
+  $("fFeeMinus").disabled = r <= FEE_RATIO_MIN;
+  $("fFeePlus").disabled = r >= FEE_RATIO_MAX;
+  return r;
+}
+function stepFeeRatio(t, dir) {
+  const cur = Number($("fFeeRatio").value) || 0;
+  applyFeeRatio(t, cur + dir * FEE_RATIO_STEP);
+  showFeeError("");
+}
+function bindFeeStepHold(btn, tick) {
+  let delay, repeat;
+  const stop = () => {
+    clearTimeout(delay);
+    clearInterval(repeat);
+    delay = repeat = null;
+    window.removeEventListener("mouseup", stop);
+    window.removeEventListener("pointerup", stop);
+  };
+  btn.onmousedown = (e) => {
+    if (e.button !== 0 || btn.disabled) return;
+    e.preventDefault();
+    tick();
+    delay = setTimeout(() => { repeat = setInterval(() => { if (btn.disabled) stop(); else tick(); }, 50); }, 400);
+    window.addEventListener("mouseup", stop);
+    window.addEventListener("pointerup", stop);
+  };
+}
+function readCompanyFee(amount) {
+  if (currentClaimLine() !== "履约" || !$("swFee").classList.contains("on")) return { on: false, fee: 0 };
+  const parsed = parseFeePctInput();
+  if (parsed.empty) return { error: "请填写承担比例" };
+  if (parsed.error) return parsed;
+  return { on: true, fee: feeFromRatio(amount, parsed.ratio), ratio: parsed.ratio };
+}
+function validateFeeAmount(amount) {
+  if (currentClaimLine() !== "履约" || !$("swFee").classList.contains("on")) {
+    showFeeError("");
+    return { on: false, fee: 0 };
+  }
+  const res = readCompanyFee(amount);
+  showFeeError(res.error || "");
+  return res;
 }
 
 function submitBizClaim() {
@@ -1644,23 +1888,83 @@ function submitBizClaim() {
     const exact = MERCHANTS.find(m => m.id === typed);
     if (exact) merchantId = exact.id;
   }
-  const picked = document.querySelector('#fLine input[name="fLine"]:checked');
-  const bizLine = picked ? picked.value : "";
+  const bizLine = currentClaimLine();
   if (!bizLine) { toast("请选择业务线"); return; }
   if (!merchantId) { toast("请选择商户"); return; }
   if (!claimDraft.voucherName) { toast("请上传转账凭证"); return; }
+  const feeRes = validateFeeAmount(t.amount);
+  if (feeRes.error) {
+    toast(feeRes.error);
+    return;
+  }
   const m = merchantById(merchantId);
   t.status = "claimed";
+  t.creditedBy = "biz";
   t.merchantId = m.id;
   t.merchantName = m.name;
   t.customerName = m.name;
   t.customerCode = t.customerCode || "M-" + m.id;
   t.bizLine = bizLine;
   t.attachments = [claimDraft.voucherName];
+  t.companyFee = feeRes.on ? feeRes.fee : 0;
   highlightId = t.id;
   closeMask();
-  toast("认领成功，资金已充值到商户账户");
+  if (feeRes.on && feeRes.fee > 0) {
+    toast(`认领成功。流水 ${t.currency} ${Number(t.amount).toFixed(2)} 已充值；公司承担手续费 ${t.currency} ${feeRes.fee.toFixed(2)} 已补足充值到商户资金账户`);
+  } else {
+    toast("认领成功，资金已充值到商户账户");
+  }
   render();
+}
+
+function openRollbackModal(id) {
+  const t = txns.find(x => x.id === id);
+  if (!t || t.status !== "claimed" || t.creditedBy === "auto") {
+    toast("该流水不能匹配退回");
+    return;
+  }
+  const fee = companyFeeOf(t);
+  const total = Number(t.amount) + fee;
+  $("mask").classList.add("show");
+  $("mask").innerHTML = `
+    <div class="modal">
+      <div class="modal-h">匹配退回<button class="x" id="cx">×</button></div>
+      <div class="modal-b">
+        <div class="alert alert-warn">退回后，将从商户资金账户扣除本笔已充值金额。流水回到待认领。</div>
+        <div class="summary" style="grid-template-columns:108px 1fr">
+          <div class="k">交易号</div><div class="v mono">${t.txnNo}</div>
+          <div class="k">商户</div><div class="v">${t.merchantName || "-"}（${t.merchantId || "-"}）</div>
+          <div class="k">业务线</div><div class="v">${t.bizLine || "-"}</div>
+        </div>
+        <div class="fee-sum">
+          <div>流水金额：<span class="amt">${t.currency} ${Number(t.amount).toFixed(2)}</span></div>
+          ${fee ? `<div>公司承担手续费：<span class="amt">${t.currency} ${fee.toFixed(2)}</span></div>` : `<div>公司承担手续费：无</div>`}
+          <div>合计扣除：<span class="amt">${t.currency} ${total.toFixed(2)}</span></div>
+        </div>
+      </div>
+      <div class="modal-f">
+        <button class="btn" id="cx2">取消</button>
+        <button class="btn btn-danger" id="okRollback">确认退回</button>
+      </div>
+    </div>`;
+  $("cx").onclick = $("cx2").onclick = closeMask;
+  $("okRollback").onclick = () => {
+    t.status = "unclaimed";
+    t.creditedBy = "";
+    t.merchantId = "";
+    t.merchantName = "";
+    t.customerName = "";
+    t.customerCode = "";
+    t.bizLine = "";
+    t.attachments = [];
+    t.companyFee = 0;
+    highlightId = t.id;
+    closeMask();
+    toast(fee
+      ? `已匹配退回，已从商户账户扣除流水 ${t.currency} ${Number(t.amount).toFixed(2)} 及公司承担手续费 ${t.currency} ${fee.toFixed(2)}`
+      : `已匹配退回，已从商户账户扣除流水 ${t.currency} ${Number(t.amount).toFixed(2)}`);
+    render();
+  };
 }
 
 function renderSpec() {
@@ -1677,7 +1981,7 @@ function renderSpec() {
           <tr>
             <td>业务入账 → 收款明细</td>
             <td>渠道 Tab、查询、Excel、原有列、一键认领、凭证校验</td>
-            <td>增加推荐业务线 / 推荐商户；展开区可按这两项查询；导出含这两列；有推荐则预填；正式认领一次；已认领不再出一键认领</td>
+            <td>增加推荐业务线 / 推荐商户；履约可开公司承担手续费；业务认领后可匹配退回；有推荐则预选；正式认领一次</td>
           </tr>
           <tr>
             <td>公司业务 → 收款流水</td>
@@ -1716,8 +2020,17 @@ function renderSpec() {
         <li>业务线 + 商户决定入账账户；金额等于流水金额，不可改。</li>
         <li>必须上传转账凭证；推荐预填不代替凭证。</li>
         <li>确认认领后立即充值，无审批。</li>
-        <li>一笔流水只能正式认领一次；纠错走现有回滚，本期不改。</li>
+        <li>一笔流水只能正式认领一次。认领错了走匹配退回：从商户资金账户扣除流水金额；若当时开启了公司承担手续费，一并扣除该手续费。退回后流水回到待认领。</li>
         <li>业务在弹窗中改业务线，不自动改商户（推荐基于历史数据）。</li>
+      </ul>
+
+      <h3>5. 公司承担手续费</h3>
+      <ul>
+        <li>仅业务线为履约时可用。广告、拒付不展示该选项。</li>
+        <li>默认关闭。开启后可拖动滑杆粗调承担比例（0%～4%），也可用加减按钮或直接输入精确到 0.01%；手续费金额按本笔流水金额自动计算，不可手工改金额。</li>
+        <li>认领成功：流水金额充值到商户资金账户；手续费由公司承担，按计算出的金额补足充值到同一资金账户。</li>
+        <li>匹配退回：扣除流水金额 + 公司承担手续费（如有）。</li>
+        <li>改选业务线离开履约时，该选项关闭并将比例重置为 0%。</li>
       </ul>
     </div>
   `;
