@@ -384,23 +384,57 @@
     }
     .kv-mini { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
     .kv-mini .k { color: rgba(0, 0, 0, 0.45); }
+    .confirm-box { display: grid; gap: 12px; }
+    .confirm-sec { border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px 14px; background: #fafafa; }
+    .confirm-sec-h { font-weight: 600; margin: 0 0 8px; }
+    .confirm-sec .kv-mini { margin: 0; }
+    .confirm-extra { margin: 10px 0 0; color: #d48806; }
+    tr.flow-locked { color: rgba(0, 0, 0, 0.35); }
+    tr.flow-locked td { opacity: 0.7; }
+    .lock-tag { display: inline-block; margin-left: 6px; color: #d48806; font-size: 12px; }
     .amt-compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; padding: 12px 0; border-top: 1px solid #f0f0f0; }
     .amt-compare .k { color: rgba(0, 0, 0, 0.45); margin-bottom: 4px; }
     .amt-compare .v.warn { color: #d48806; font-weight: 600; }
     .gate-hint { margin: 12px 0 0; }
     .alert-box { padding: 12px 14px; border-radius: 6px; margin: 12px 0 0; line-height: 1.65; border: 1px solid #ffe58f; background: #fffbe6; }
-    .fee-block { margin: 16px 0 12px; padding: 14px 16px; border: 1px solid #f0f0f0; border-radius: 8px; }
+    .fee-block { margin: 0 0 12px; padding: 14px 16px; border: 1px solid #f0f0f0; border-radius: 8px; background: #fafafa; }
     .fee-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .fee-head .ttl { font-weight: 600; }
+    .fee-head .layer-sub { font-weight: 400; color: rgba(0, 0, 0, 0.45); margin-left: 8px; }
     .fee-use { display: flex; align-items: center; gap: 8px; }
     .fee-use.disabled { color: rgba(0, 0, 0, 0.25); }
     .cover-body { margin-top: 8px; }
-    .cover-body[hidden], .fee-split[hidden] { display: none !important; }
+    .cover-body[hidden], .fee-split[hidden], .layer-kv[hidden], .layer-sum[hidden] { display: none !important; }
     .fee-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
     .fee-calc { margin: 8px 0 0; }
     .fee-err { color: #ff4d4f; margin: 8px 0 0; }
-    .fx-cover { margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
-    .fee-block .amt-compare { padding-top: 12px; }
+    .fx-cover { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #f0f0f0; }
+    .fee-block .amt-compare { padding: 10px 0 4px; border-top: 0; }
+    .credit-path {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px 16px; margin-top: 12px;
+    }
+    .credit-path.same { grid-template-columns: 1fr 1fr; }
+    .credit-path .k { color: rgba(0, 0, 0, 0.45); margin-bottom: 4px; }
+    .credit-path .v { line-height: 22px; word-break: break-all; }
+    .credit-path .v.amt { font-weight: 600; }
+    .credit-path .ccy-edit-row { flex-wrap: wrap; min-height: 22px; }
+    .layer-kv {
+      display: grid; grid-template-columns: 88px 1fr 88px 1fr;
+      gap: 8px 12px; align-items: center; margin-top: 10px;
+    }
+    .layer-kv .k { color: rgba(0, 0, 0, 0.45); }
+    .layer-kv .v.amt { font-weight: 600; }
+    .layer-kv .v.warn { color: #d48806; font-weight: 600; }
+    .layer-sum {
+      display: flex; flex-wrap: wrap; gap: 6px 28px;
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;
+      align-items: baseline;
+    }
+    .layer-sum .pair { display: flex; gap: 8px; align-items: baseline; }
+    .layer-sum .k { color: rgba(0, 0, 0, 0.45); }
+    .layer-sum .v.amt { font-weight: 600; }
+    .fee-block .note { margin-top: 8px; }
     .form-err { color: #ff4d4f; margin: 8px 0 0; min-height: 18px; }
     .section-title { margin: 8px 0 6px; font-size: 14px; font-weight: 600; }
     .section-title.first { margin-top: 0; }
@@ -625,11 +659,41 @@
       "44962": {},
       "43827": { fee: true, fx: true },
       "42790": {},
-      "41654": {}
+      "41654": {},
+      "14229": {},
+      "3639": { fee: true, fx: true },
+      "71008": { fee: true },
+      "88021": { fx: true },
+      "55210": {},
+      "22617": {}
     };
     const MERCHANT_ACCOUNT = {
-      "43827": "CNH"
+      "43827": "CNH",
+      "3639": "CNH",
+      "88021": "CNH",
+      "55210": "EUR"
     };
+    const SCENE_MERCHANTS = {
+      "14229": "星辰出海-广告主账户",
+      "3639": "万里汇零售测试中",
+      "71008": "华贸商城-主账户",
+      "88021": "迅达供应链-代发账户",
+      "22617": "远航支付-美国账户"
+    };
+    const SCENE_CASES = [
+      { code: "EQ-USD", time: "2026-11-09 09:01:00", amount: 1000, merchantId: "14229", expect: 1000, biz: "广告", note: "等额同币种，无补足", payer: "STARLINK SCENE USD" },
+      { code: "EQ-FX", time: "2026-11-09 09:02:00", amount: 1430, merchantId: "3639", expect: 1430, biz: "履约", note: "等额跨币种，入账确认 / 汇损 1%", payer: "HANGZHOU RETAIL SCENE" },
+      { code: "FEE", time: "2026-11-09 09:03:00", amount: 1400, merchantId: "71008", expect: 1450, biz: "履约", note: "手续费补足 50，未超 4%", payer: "HUAMAO SCENE FEE" },
+      { code: "FEE-OFF", time: "2026-11-09 09:04:00", amount: 300, merchantId: "14229", expect: 326.4, biz: "广告", note: "商户不支持补足，按流水入账", payer: "STARLINK SCENE NOFEE" },
+      { code: "FEE-CAP", time: "2026-11-09 09:05:00", amount: 50, merchantId: "71008", expect: 80, biz: "履约", note: "手续费超 4%", payer: "HUAMAO SCENE CAP" },
+      { code: "LOW", time: "2026-11-09 09:06:00", amount: 1860, merchantId: "3639", expect: 1430, biz: "履约", note: "期望低于流水，按流水全额", payer: "HANGZHOU RETAIL LOW" },
+      { code: "CCY", time: "2026-11-09 09:07:00", amount: 326.4, currency: "EUR", merchantId: "14229", expect: 326.4, orderCcy: "USD", biz: "广告", note: "流水 EUR / 审核单 USD，应换流水", payer: "EURO SCENE BUYER" },
+      { code: "FX-CAP", time: "2026-11-09 09:08:00", amount: 2000, merchantId: "88021", expect: 2000, biz: "履约", note: "仅汇损，试 1% 上限", payer: "XUNDA SCENE FX" },
+      { code: "DUP", time: "2026-11-09 09:09:00", amount: 450, merchantId: "88021", expect: 450, biz: "履约", note: "待匹配重复单", payer: "XUNDA SCENE DUP" },
+      { code: "LINE", time: "2026-11-09 09:10:00", amount: 800, merchantId: "71008", expect: 800, biz: "履约", note: "业务线/商户一致性", payer: "HUAMAO SCENE LINE" },
+      { code: "REC-LOW", time: "2026-11-09 09:11:00", amount: 500, merchantId: "14229", expect: 500, biz: "广告", note: "低置信推荐", payer: "STARLINK SCENE LOWREC" },
+      { code: "NOREC", time: "2026-11-09 09:12:00", amount: 700, merchantId: "22617", expect: 700, biz: "拒付", note: "无推荐手工认领", payer: "YUANHANG SCENE NOREC" }
+    ];
     const FX_USD = { USD: 1, EUR: 0.919876, GBP: 0.784512, HKD: 7.781234, CNY: 7.123456, CNH: 7.123456, SGD: 1.345678 };
     const MATCH_CCYS = ["USD", "EUR", "GBP", "HKD", "CNY", "CNH"];
     const PEOPLE = [
@@ -859,7 +923,47 @@
         });
         attachSettlement(rows[rows.length - 1], index);
       }
+      SCENE_CASES.slice().reverse().forEach((s) => rows.unshift(makeSceneReview(s)));
       return rows;
+    }
+
+    function makeSceneReview(s) {
+      const name = SCENE_MERCHANTS[s.merchantId] || s.merchantId;
+      const voucher = "SC-" + s.code + ".pdf";
+      const txn = "SC-" + s.code;
+      return {
+        id: "sc-" + s.code.toLowerCase(),
+        reviewNo: "TR-SC-" + s.code,
+        merchantId: s.merchantId,
+        merchantName: name,
+        merchantUuid: "scene-" + s.code,
+        uniqueId: name,
+        biz: s.biz || "履约",
+        submitAt: s.time,
+        submitter: "场景演示",
+        submitterMail: "scene@harbor-demo.test",
+        platform: "Airwallex",
+        bizTxn: txn,
+        transferDate: s.time.slice(0, 10),
+        payer: s.payer || name,
+        currency: s.orderCcy || s.currency || "USD",
+        amount: s.expect != null ? s.expect : s.amount,
+        voucher: voucher,
+        shots: [voucher],
+        others: [],
+        assign: "-",
+        confirmStatus: "已确认",
+        status: "待匹配",
+        internalNote: "场景：" + s.note,
+        precharge: "否",
+        prechargeNo: "",
+        expectedAt: "",
+        opsGroup: "",
+        proofFiles: [],
+        prechargeRemark: "",
+        flowId: "",
+        sceneTxn: txn
+      };
     }
 
     function flowTxn(index) {
@@ -953,15 +1057,28 @@
     }
 
     function buildFlows() {
-      const flows = [
+      const sceneFlows = SCENE_CASES.map((s) => ({
+        id: "flow-sc-" + s.code.toLowerCase(),
+        platform: "Airwallex",
+        alias: "scene-demo",
+        txn: "SC-" + s.code,
+        time: s.time,
+        currency: s.currency || "USD",
+        net: s.amount,
+        payer: s.payer || SCENE_MERCHANTS[s.merchantId] || "",
+        account: "SC-ACC-" + s.code,
+        note: "场景：" + s.note
+      }));
+      const flows = sceneFlows.concat([
         { id: "demo-eq-326", platform: "Payoneer", alias: "payoneer-harbor", txn: "PN-EQ-32640", time: stamp(10), currency: "USD", net: 326.4, payer: "青岚百货", account: "demo-eq-326", note: "等额匹配演示" },
         { id: "demo-low-300", platform: "Payoneer", alias: "payoneer-harbor", txn: "PN-LOW-30000", time: stamp(12), currency: "USD", net: 300, payer: "青岚百货", account: "demo-low-300", note: "商户不支持差额补足演示" },
         { id: "demo-eur-326", platform: "Payoneer", alias: "payoneer-harbor", txn: "PN-EUR-32640", time: stamp(16), currency: "EUR", net: 326.4, payer: "EURO BUYER", account: "demo-eur-326", note: "币种不一致演示" },
         { id: "demo-low-1400", platform: "Payoneer", alias: "payoneer-harbor", txn: "PN-LOW-14000", time: stamp(18), currency: "USD", net: 1400, payer: "白露服饰", account: "demo-low-1400", note: "手续费补足演示" },
         { id: "demo-eq-1430", platform: "Payoneer", alias: "payoneer-harbor", txn: "PN-EQ-14300", time: stamp(19), currency: "USD", net: 1430, payer: "白露服饰", account: "demo-eq-1430", note: "账户币种换算演示" },
         { id: "demo-low-50", platform: "Payoneer", alias: "payoneer-harbor", txn: "PN-LOW-5000", time: stamp(20), currency: "USD", net: 50, payer: "白露服饰", account: "demo-low-50", note: "手续费超 4% 上限演示" },
-        { id: "demo-eq-74", platform: "Payoneer", alias: "payoneer-harbor", txn: "PN-EQ-7420", time: stamp(40), currency: "USD", net: 74.2, payer: "白露服饰", account: "demo-eq-74", note: "等额匹配演示" }
-      ];
+        { id: "demo-eq-74", platform: "Payoneer", alias: "payoneer-harbor", txn: "PN-EQ-7420", time: stamp(40), currency: "USD", net: 74.2, payer: "白露服饰", account: "demo-eq-74", note: "等额匹配演示" },
+        { id: "shared-a7", platform: "Airwallex", alias: "airwallex-muxue-real", txn: "wf-rec-multi-7701", time: stamp(8), currency: "USD", net: 1860, payer: "HANGZHOU RETAIL TRADE CO", account: "6222021000001234567", note: "与收款明细共用，入账锁定演示" }
+      ]);
       ["Airwallex", "Payoneer"].forEach((platform, group) => {
         for (let index = 0; index < 100; index += 1) {
           const serial = group * 100 + index;
@@ -1147,8 +1264,8 @@
         field("子业务名称", '<select class="control is-placeholder" data-q="biz" aria-label="子业务名称">' + optionList("请选择子业务名称", "", ["履约", "广告", "物流"]) + "</select>") +
         field("状态", '<select class="control is-placeholder" data-q="status" aria-label="状态">' + optionList("请选择状态", "", STATUSES) + "</select>") +
         field("提交时间", '<div class="control range"><button type="button" class="range-text placeholder" id="start-label" data-act="pick" data-which="start">开始日期</button><span class="dash">—</span><button type="button" class="range-text placeholder" id="end-label" data-act="pick" data-which="end">结束日期</button><button type="button" class="cal" data-act="pick" data-which="start" aria-label="打开日期">' + ICONS.calendar + '</button><input class="proxy" id="start" type="date" aria-label="开始日期"><input class="proxy" id="end" type="date" aria-label="结束日期"></div>') +
-        field("交易ID", '<input class="control" data-q="txn" placeholder="请输入交易ID" aria-label="交易ID">') +
-        field("转账审核单号", '<input class="control" data-q="reviewNo" placeholder="请输入转账审核单号" aria-label="转账审核单号">') +
+        field("交易ID", '<input class="control" data-q="txn" placeholder="场景搜 SC-" aria-label="交易ID">') +
+        field("转账审核单号", '<input class="control" data-q="reviewNo" placeholder="场景搜 TR-SC-" aria-label="转账审核单号">') +
         field("预充申请", '<select class="control" data-q="precharge" aria-label="预充申请"><option value="">全部</option><option value="是">是</option><option value="否">否</option></select>') +
         field("预充申请单号", '<input class="control" data-q="prechargeNo" placeholder="请输入预充申请单号" aria-label="预充申请单号">') +
         '<div class="filter-actions"><button type="button" class="btn primary" data-act="search">搜索</button><button type="button" class="btn default" data-act="reset">重置</button></div>' +
@@ -1215,10 +1332,11 @@
       const start = (state.dialog.flowPage - 1) * state.dialog.flowPageSize;
       const slice = all.slice(start, start + state.dialog.flowPageSize);
       const body = slice.length ? slice.map((flow) => {
-        const picked = state.dialog.selectedId === flow.id;
-        return '<tr class="' + (picked ? "picked" : "") + '" data-flow-row="' + esc(flow.id) + '">' +
-          '<td class="check"><input type="checkbox" data-flow="' + esc(flow.id) + '"' + (picked ? " checked" : "") + ' aria-label="选择交易"></td>' +
-          "<td>" + esc(flow.platform) + "</td><td class=\"muted\">" + esc(flow.alias) + "</td><td>" + showText(flow.txn) + "</td>" +
+        const occupied = isFlowOccupied(flow);
+        const picked = !occupied && state.dialog.selectedId === flow.id;
+        return '<tr class="' + (occupied ? "flow-locked" : picked ? "picked" : "") + '" data-flow-row="' + esc(flow.id) + '">' +
+          '<td class="check"><input type="checkbox" data-flow="' + esc(flow.id) + '"' + (picked ? " checked" : "") + (occupied ? " disabled" : "") + ' aria-label="选择交易"></td>' +
+          "<td>" + esc(flow.platform) + "</td><td class=\"muted\">" + esc(flow.alias) + "</td><td>" + showText(flow.txn) + (occupied ? '<span class="lock-tag">已入账</span>' : "") + "</td>" +
           '<td class="time">' + esc(flow.time) + "</td><td>" + esc(flow.currency) + '</td><td class="money">' + money(flow.net) + "</td><td>" +
           showText(flow.payer) + "</td><td>" + showText(flow.account) + "</td></tr>";
       }).join("") : '<tr><td class="empty" colspan="9">没有符合条件的交易</td></tr>';
@@ -1237,6 +1355,40 @@
       return money2(n);
     }
     function feeCap(amount) { return Math.round(Number(amount) * 0.04 * 100) / 100; }
+    function fxCap(amount) { return Math.round(Number(amount) * 0.01 * 100) / 100; }
+    const FLOW_LOCK_KEY = "fund-flow-credit-v15";
+    function flowLockMap() {
+      try { return JSON.parse(localStorage.getItem(FLOW_LOCK_KEY) || "{}") || {}; }
+      catch (e) { return {}; }
+    }
+    function saveFlowLockMap(map) {
+      localStorage.setItem(FLOW_LOCK_KEY, JSON.stringify(map));
+    }
+    function getFlowLock(txn) {
+      if (!txn) return null;
+      return flowLockMap()[txn] || null;
+    }
+    function lockFlow(txn, payload) {
+      if (!txn) return;
+      const map = flowLockMap();
+      map[txn] = Object.assign({ at: Date.now() }, payload || {});
+      saveFlowLockMap(map);
+      try { window.parent && window.parent !== window && window.parent.postMessage({ type: "fund-flow-lock", txn: txn, payload: map[txn] }, "*"); }
+      catch (e) {}
+    }
+    function unlockFlow(txn) {
+      if (!txn) return;
+      const map = flowLockMap();
+      delete map[txn];
+      saveFlowLockMap(map);
+      try { window.parent && window.parent !== window && window.parent.postMessage({ type: "fund-flow-unlock", txn: txn }, "*"); }
+      catch (e) {}
+    }
+    function isFlowOccupied(flow) {
+      if (!flow) return false;
+      if (getFlowLock(flow.txn)) return true;
+      return state.rows.some((row) => stillMatched(row.status) && (row.flowId === flow.id || row.flowTxn === flow.txn));
+    }
     function selectedFlow() {
       const dialog = state.dialog;
       if (!dialog || !dialog.selectedId) return null;
@@ -1270,6 +1422,7 @@
     }
     function matchCoverWouldOn(row, flow, dialog) {
       if ((dialog.step || 1) !== 3) return false;
+      if (!matchNeedFeeStep(row, flow, dialog)) return false;
       const cap = merchantCoverOf(row.merchantId);
       if (!cap.any || dialog.coverOn === false) return false;
       return true;
@@ -1299,7 +1452,7 @@
     function matchShowCredit(row, flow, dialog) {
       if (!flow || matchCcyMismatch(row, flow, dialog)) return false;
       if ((dialog.step || 1) === 3) return true;
-      if ((dialog.step || 1) === 2) return !matchNeedCover(row, flow, dialog);
+      if ((dialog.step || 1) === 2) return !matchNeedStep3(row, flow, dialog);
       return false;
     }
     function matchFxWouldOn(row, dialog) {
@@ -1313,6 +1466,8 @@
       const diff = money2(st.amt - st.auto);
       if (diff < 0) return { error: "最终入账金额不能低于自动换算金额", diff: diff };
       if (diff === 0) return { on: false, fx: 0, diff: 0 };
+      const limit = fxCap(st.auto);
+      if (diff > limit) return { error: "超出汇损最大比例 1%", diff: diff, limit: limit };
       if (!merchantFxOf(row.merchantId)) {
         return { error: "该商户不支持汇损补足，请将最终入账金额改回自动换算金额，或找相关人员申请配置支持", diff: diff };
       }
@@ -1321,52 +1476,57 @@
           ? { on: false, fx: 0, diff: diff, needOn: true }
           : { error: "未开启公司承担，最终入账金额须等于自动换算金额", diff: diff };
       }
-      return { on: true, fx: diff, diff: diff };
+      return { on: true, fx: diff, diff: diff, limit: limit };
     }
-    function matchFxNote(row, diff) {
-      if (!merchantFxOf(row.merchantId)) return "该商户不支持汇损补足。最终入账金额须等于自动换算金额。";
-      if (diff > 0) return "该商户支持公司承担汇损补足。差额 = 最终入账金额 − 自动换算金额，全部记为汇损补足。";
-      return "该商户支持公司承担汇损补足。最终入账高于自动换算时，差额全部记为汇损补足。";
+    function matchFxNote(row, diff, on) {
+      if (!merchantFxOf(row.merchantId)) return "该商户不支持汇损补足。最终入账须等于自动换算金额。";
+      if (diff <= 0) return "按自动换算入账。若需公司承担汇损，请先提高最终入账金额（上限 1%）。汇率按打开本步时的 FUND 报价锁定。";
+      if (on === false) return "已关闭公司承担。请将最终入账改回自动换算，或重新开启。";
+      return "差额全部记为汇损补足，上限为自动换算金额的 1%。";
     }
-    function matchCreditHtml(row, flow, dialog) {
+    function matchCreditHtml(row, flow, dialog, opts) {
       if (!matchShowCredit(row, flow, dialog)) return "";
       const st = matchCreditState(row, flow, dialog);
       if (!st) return "";
+      const n = opts && opts.n ? esc(opts.n) + " · " : "";
       const rateText = st.same ? "1" : (st.rate == null ? "-" : "1 " + st.src + " = " + formatRate(st.rate) + " " + st.dst);
       const autoText = st.auto == null ? "-" : moneyLabel(st.dst, st.auto);
       const amtText = st.amt == null ? "-" : moneyLabel(st.dst, st.amt);
+      const baseText = moneyLabel(st.src, st.base);
       let amtHtml;
       if (st.same || st.rate == null) {
-        amtHtml = "<div>" + esc(amtText) + "</div>";
+        amtHtml = '<div class="v">' + esc(amtText) + "</div>";
       } else {
-        amtHtml = '<div class="ccy-edit-row"><span>' + esc(amtText) + '</span><button type="button" class="link" data-act="edit-credit">修改</button>' +
+        amtHtml = '<div class="v ccy-edit-row"><span>' + esc(amtText) + '</span><button type="button" class="link" data-act="edit-credit">修改</button>' +
           (dialog.creditDirty ? '<button type="button" class="link" data-act="credit-reset">恢复自动换算</button>' : "") + "</div>";
       }
       const fxRes = st.same ? null : readMatchFxCover(row, flow, dialog, true);
       const fxDiff = fxRes && typeof fxRes.diff === "number" ? fxRes.diff : 0;
-      const fxCap = merchantFxOf(row.merchantId);
-      const fxOn = fxCap && fxDiff > 0 && matchFxWouldOn(row, dialog);
+      const fxCapOk = merchantFxOf(row.merchantId);
+      const fxOn = fxCapOk && fxDiff > 0 && matchFxWouldOn(row, dialog);
       let fxHtml = "";
-      if (!st.same) {
-        fxHtml = '<div class="amt-compare"><div><div class="k">自动换算金额</div><div class="v amt">' + esc(autoText) +
-          '</div></div><div><div class="k">最终入账金额</div><div class="v">' + esc(amtText) +
-          '</div></div><div><div class="k">汇损差额</div><div class="v warn">' + esc(moneyLabel(st.dst, Math.max(fxDiff, 0))) +
-          "</div></div></div>" +
-          '<div class="fx-cover" id="fxBlock"><div class="fee-head"><div class="ttl">汇损补足</div><div class="fee-use' + (fxCap ? "" : " disabled") + '"><span>公司承担</span>' +
-          '<button type="button" class="switch' + (fxOn ? " on" : "") + (fxCap && fxDiff > 0 ? "" : " disabled") + '" id="swFx" data-act="fx-sw"' +
-          (fxCap && fxDiff > 0 ? "" : " disabled") + "><i></i></button></div></div>" +
-          '<p class="note" id="fxNote">' + esc(matchFxNote(row, fxDiff)) + "</p>" +
-          '<p class="fee-calc" id="fxCalc"' + (fxRes && fxRes.on ? "" : " hidden") + ">" + (fxRes && fxRes.on ? "汇损补足 <b>" + esc(moneyLabel(st.dst, fxRes.fx)) + "</b>" : "") + "</p>" +
+      if (st.same) {
+        fxHtml = '<p class="note">同币种，按入账基数原币入账。</p>';
+      } else if (fxDiff > 0) {
+        fxHtml = '<div class="fx-cover" id="fxBlock"><div class="fee-head"><div class="ttl">汇损补足</div><div class="fee-use' + (fxCapOk ? "" : " disabled") + '"><span>公司承担</span>' +
+          '<button type="button" class="switch' + (fxOn ? " on" : "") + (fxCapOk ? "" : " disabled") + '" id="swFx" data-act="fx-sw"' +
+          (fxCapOk ? "" : " disabled") + "><i></i></button></div></div>" +
+          '<div class="layer-kv"><div class="k">汇损差额</div><div class="v warn">' + esc(moneyLabel(st.dst, fxDiff)) +
+          '</div><div class="k">汇损补足</div><div class="v amt" id="fxCalc">' + (fxRes && fxRes.on ? esc(moneyLabel(st.dst, fxRes.fx)) : "—") + "</div></div>" +
+          '<p class="note" id="fxNote">' + esc(matchFxNote(row, fxDiff, fxOn)) + "</p>" +
           '<p class="fee-err" id="fxErr"' + (fxRes && fxRes.error ? "" : " hidden") + ">" + (fxRes && fxRes.error ? esc(fxRes.error) : "") + "</p></div>";
+      } else {
+        fxHtml = '<p class="note" id="fxNote">' + esc(matchFxNote(row, 0)) + "</p>";
       }
-      const note = st.same
-        ? "商户账户币种与流水币种相同，按入账基数原币入账，无需汇损补足。"
-        : "汇率取自 FUND 当前报价。入账基数 = 流水金额 + 手续费补足（如有）。跨币种时最终入账可改，高于自动换算的差额记为汇损补足。";
-      return '<div class="fee-block" id="creditBlock"><div class="fee-head"><div class="ttl">入账确认</div></div>' +
-        '<div class="kv-mini" style="margin-top:12px"><div class="k">商户账户币种</div><div>' + esc(st.dst) + "</div>" +
-        '<div class="k">预计入账汇率</div><div>' + esc(rateText) + "</div>" +
-        '<div class="k">' + (st.same ? "预计入账金额" : "最终入账金额") + "</div>" + (st.same ? "<div>" + esc(autoText) + "</div>" : amtHtml) + "</div>" +
-        fxHtml + '<p class="note">' + esc(note) + "</p></div>";
+      const path = st.same
+        ? '<div class="credit-path same"><div><div class="k">入账基数</div><div class="v amt">' + esc(baseText) +
+          '</div></div><div><div class="k">入账金额</div><div class="v">' + esc(autoText) + "</div></div></div>"
+        : '<div class="credit-path"><div><div class="k">入账基数</div><div class="v">' + esc(baseText) +
+          '</div></div><div><div class="k">汇率</div><div class="v">' + esc(rateText) +
+          '</div></div><div><div class="k">自动换算</div><div class="v amt">' + esc(autoText) +
+          '</div></div><div><div class="k">最终入账</div>' + amtHtml + "</div></div>";
+      return '<div class="fee-block" id="creditBlock"><div class="fee-head"><div class="ttl">' + n + "入账换算<span class=\"layer-sub\">账户币种 " + esc(st.dst) + "</span></div></div>" +
+        path + fxHtml + "</div>";
     }
     function matchCcy(row, dialog) {
       return (dialog && dialog.xferCcy) || (row && row.currency) || "";
@@ -1381,14 +1541,26 @@
       const ccy = matchCcy(row, dialog);
       return !!(ccy && flow.currency && ccy !== flow.currency);
     }
-    function matchNeedCover(row, flow, dialog) {
+    function matchExpectOverFlow(row, flow, dialog) {
       if (!flow || matchCcyMismatch(row, flow, dialog)) return false;
       const expect = matchExpect(row, dialog);
       if (expect == null || Number.isNaN(expect)) return false;
       return expect > money2(flow.net);
     }
+    function matchNeedFeeStep(row, flow, dialog) {
+      if (!matchExpectOverFlow(row, flow, dialog)) return false;
+      return merchantCoverOf(row.merchantId).any;
+    }
+    function matchNeedFxStep(row, flow, dialog) {
+      if (!flow || matchCcyMismatch(row, flow, dialog)) return false;
+      return accountCcyOf(row.merchantId) !== flow.currency;
+    }
+    function matchNeedCover(row, flow, dialog) { return matchNeedFeeStep(row, flow, dialog); }
+    function matchNeedStep3(row, flow, dialog) {
+      return matchNeedFeeStep(row, flow, dialog) || matchNeedFxStep(row, flow, dialog);
+    }
     function matchStepsHtml(row, flow, dialog) {
-      const labels = matchNeedCover(row, flow, dialog) ? ["选择流水", "匹配确认", "入账确认"] : ["选择流水", "匹配确认"];
+      const labels = matchNeedStep3(row, flow, dialog) ? ["选择流水", "匹配确认", "入账确认"] : ["选择流水", "匹配确认"];
       const step = dialog.step || 1;
       return '<div class="match-steps">' + labels.map((label, index) => {
         const n = index + 1;
@@ -1409,12 +1581,7 @@
     }
     function matchCcyFieldHtml(row, dialog) {
       const ccy = matchCcy(row, dialog);
-      const editing = !!dialog.editCcy;
-      const opts = MATCH_CCYS.map((item) => '<option value="' + item + '"' + (item === ccy ? " selected" : "") + ">" + item + "</option>").join("");
-      return '<div class="ccy-edit-row">' +
-        (editing ? '<select id="match-ccy" class="control">' + opts + "</select>" : '<span>' + esc(ccy || "-") + "</span>") +
-        (editing ? "" : '<button type="button" class="link" data-act="edit-ccy">修改</button>') +
-        "</div>";
+      return '<div class="ccy-edit-row"><span>' + esc(ccy || "-") + "</span></div>";
     }
     function matchExpectFieldHtml(row, dialog) {
       const ccy = matchCcy(row, dialog);
@@ -1425,7 +1592,7 @@
     function matchFooterHtml(row, flow, dialog) {
       const step = dialog.step || 1;
       if (step === 1) return '<button type="button" class="btn default" data-act="close">取消</button><button type="button" class="btn primary" data-act="match-next">下一步</button>';
-      if (step === 2 && matchNeedCover(row, flow, dialog)) return '<button type="button" class="btn default" data-act="match-prev">上一步</button><button type="button" class="btn primary" data-act="match-next">下一步</button>';
+      if (step === 2 && matchNeedStep3(row, flow, dialog)) return '<button type="button" class="btn default" data-act="match-prev">上一步</button><button type="button" class="btn primary" data-act="match-next">下一步</button>';
       if (step === 2) return '<button type="button" class="btn default" data-act="match-prev">上一步</button><button type="button" class="btn primary" data-act="match-ok">确认匹配</button>';
       return '<button type="button" class="btn default" data-act="match-prev">上一步</button><button type="button" class="btn primary" data-act="match-ok">确认匹配</button>';
     }
@@ -1452,13 +1619,17 @@
       const cap = merchantCoverOf(row.merchantId);
       let hint = "";
       if (mismatch) {
-        hint = '<div class="alert-box gate-hint">转账审核单币种（' + esc(ccy) + "）与流水币种（" + esc(flow.currency) + "）不一致，请修改。</div>";
+        hint = '<div class="alert-box gate-hint">转账审核单币种（' + esc(ccy) + "）与流水币种（" + esc(flow.currency) + "）不一致。请返回上一步选择币种一致的收款流水，不要改审核单币种。</div>";
       } else if (diff > 0) {
         hint = cap.any
           ? '<p class="note gate-hint">期望入账高于流水，差额 ' + esc(moneyLabel(flow.currency, diff)) + "。下一步进行入账确认。</p>"
-          : '<div class="alert-box gate-hint">期望入账高于流水 ' + esc(moneyLabel(flow.currency, diff)) + "，该商户不支持差额补足，请调低期望入账金额，或找相关人员申请配置支持。</div>";
+          : '<div class="alert-box gate-hint">期望入账高于流水 ' + esc(moneyLabel(flow.currency, diff)) + "。该商户不支持手续费补足，本笔将按流水金额入账，期望入账仅作记录。</div>";
+      } else if (diff < 0) {
+        hint = '<div class="alert-box gate-hint">期望入账低于流水 ' + esc(moneyLabel(flow.currency, Math.abs(diff))) + "。本笔仍按流水金额全额入账，差额不退不拆。若需部分入账，请先拆分流水或联系财务。</div>";
+      } else if (matchNeedFxStep(row, flow, dialog)) {
+        hint = '<p class="note gate-hint">期望入账等于流水，无需手续费补足。账户币种不同，下一步确认入账换算。</p>';
       } else {
-        hint = '<p class="note gate-hint">期望入账未高于流水，无需手续费补足。请确认入账信息后匹配。</p>';
+        hint = '<p class="note gate-hint">期望入账等于流水，无需手续费补足。请确认入账信息后匹配。</p>';
       }
       return '<h3 class="section-title">已选收款流水</h3>' +
         '<div class="match-card">' +
@@ -1485,24 +1656,34 @@
       const diff = money2((expect || 0) - flowAmt);
       const cap = merchantCoverOf(row.merchantId);
       const on = dialog.coverOn !== false && cap.any;
-      const note = cap.any
-        ? "该商户支持公司承担手续费补足。差额 = 期望入账金额 − 流水金额，全部记为手续费补足。"
-        : "该商户不支持手续费补足。转账币种与流水币种须一致，公司承担只补手续费差额。";
-      return '<h3 class="section-title">差额补足确认</h3>' +
-        '<div class="amt-compare"><div><div class="k">流水金额</div><div class="v amt">' + esc(moneyLabel(flow.currency, flowAmt)) +
-        '</div></div><div><div class="k">期望入账金额</div><div class="v">' + esc(moneyLabel(matchCcy(row, dialog), expect)) +
-        '</div></div><div><div class="k">差额</div><div class="v warn">' + esc(moneyLabel(flow.currency, diff)) + "</div></div></div>" +
-        '<div class="fee-block"><div class="fee-head"><div class="ttl">公司承担</div><div class="fee-use' + (cap.any ? "" : " disabled") + '"><span>公司承担</span>' +
-        '<button type="button" class="switch' + (on ? " on" : "") + '" id="swFee" data-act="cover-sw"' + (cap.any ? "" : " disabled") + "><i></i></button></div></div>" +
-        '<p class="note" id="feeNote">' + esc(note) + "</p>" +
-        '<div id="feeAmountRow" class="cover-body"' + (on ? "" : " hidden") + ">" +
-        '<p class="fee-calc" id="feeCalc" hidden></p><p class="fee-err" id="feeErr" hidden></p></div></div>' +
-        matchCreditHtml(row, flow, dialog);
+      const note = !cap.any
+        ? "该商户不支持手续费补足。本笔按流水金额入账。"
+        : (on
+          ? "差额全部记为手续费补足，上限为本笔流水的 4%。"
+          : "已关闭公司承担。本笔按流水金额入账，期望入账仅作记录。");
+      const showFee = matchNeedFeeStep(row, flow, dialog);
+      const feeHtml = showFee
+        ? '<div class="fee-block" id="feeBlock"><div class="fee-head"><div class="ttl">1 · 手续费补足<span class="layer-sub">流水币种 ' + esc(flow.currency) + '</span></div><div class="fee-use' + (cap.any ? "" : " disabled") + '"><span>公司承担</span>' +
+          '<button type="button" class="switch' + (on ? " on" : "") + '" id="swFee" data-act="cover-sw"' + (cap.any ? "" : " disabled") + "><i></i></button></div></div>" +
+          '<div class="amt-compare"><div><div class="k">流水金额</div><div class="v amt">' + esc(moneyLabel(flow.currency, flowAmt)) +
+          '</div></div><div><div class="k">期望入账</div><div class="v">' + esc(moneyLabel(matchCcy(row, dialog), expect)) +
+          '</div></div><div><div class="k">差额</div><div class="v warn">' + esc(moneyLabel(flow.currency, diff)) + "</div></div></div>" +
+          '<div id="feeAmountRow" class="layer-sum"' + (on ? "" : " hidden") + ">" +
+          '<div class="pair"><span class="k">手续费补足</span><span class="v amt" id="feeCalc">' + (on ? esc(moneyLabel(flow.currency, Math.max(diff, 0))) : "—") + "</span></div>" +
+          '<div class="pair"><span class="k">入账基数</span><span class="v" id="feeBaseAmt">' + esc(moneyLabel(flow.currency, on ? money2(flowAmt + Math.max(diff, 0)) : flowAmt)) + "</span></div></div>" +
+          '<p class="note" id="feeNote">' + esc(note) + "</p>" +
+          '<p class="fee-err" id="feeErr" hidden></p></div>'
+        : "";
+      return feeHtml + matchCreditHtml(row, flow, dialog, { n: showFee ? "2" : "" });
     }
     function matchHtml() {
       const row = currentRow();
       const dialog = state.dialog;
-      const flow = selectedFlow();
+      let flow = selectedFlow();
+      if (flow && isFlowOccupied(flow) && row.flowId !== flow.id) {
+        dialog.selectedId = "";
+        flow = null;
+      }
       if ((dialog.step || 1) > 1 && !flow) dialog.step = 1;
       const step = dialog.step || 1;
       let body = "";
@@ -2053,10 +2234,12 @@
       const row = currentRow();
       if (!isFinance() || !row || row.status !== "已匹配") return;
       const input = document.getElementById("void-remark");
+      const txn = row.flowTxn;
       row.voidRemark = input ? input.value.trim() : "";
       row.status = "退回并作废";
       row.flowId = "";
       clearSettlement(row);
+      unlockFlow(txn);
       showToast("已退回并作废（演示）");
       closeDialog();
       renderRows();
@@ -2139,6 +2322,15 @@
     }
 
     function openMatch(row) {
+      const draft = emptyFlowQuery(row.platform);
+      const applied = emptyFlowQuery(row.platform);
+      let selectedId = "";
+      if (row.sceneTxn) {
+        draft.txn = row.sceneTxn;
+        applied.txn = row.sceneTxn;
+        const hit = state.flows.find((flow) => flow.txn === row.sceneTxn && !isFlowOccupied(flow));
+        if (hit) selectedId = hit.id;
+      }
       state.dialog = {
         kind: "match",
         rowId: row.id,
@@ -2147,12 +2339,12 @@
         expectAmt: row.amount == null ? "" : Number(row.amount).toFixed(2),
         editCcy: false,
         coverOn: true,
-        draft: emptyFlowQuery(row.platform),
-        applied: emptyFlowQuery(row.platform),
+        draft: draft,
+        applied: applied,
         flowPage: 1,
         flowPageSize: 20,
-        selectedId: "",
-        remark: "",
+        selectedId: selectedId,
+        remark: row.sceneTxn ? "场景演示匹配" : "",
         extraFiles: (row.extraFiles || []).map((file) => ({ name: file.name, size: file.size })),
         creditAmt: "",
         creditDirty: false,
@@ -2595,10 +2787,8 @@
       const calc = document.getElementById("feeCalc");
       const err = document.getElementById("feeErr");
       if (calc) {
-        if (res.on) {
-          calc.hidden = false;
-          calc.innerHTML = "手续费补足 <b>" + moneyLabel(flow.currency, res.fee) + "</b>";
-        } else calc.hidden = true;
+        calc.hidden = false;
+        calc.textContent = res.on ? moneyLabel(flow.currency, res.fee) : "—";
       }
       if (err) {
         err.hidden = !res.error;
@@ -2638,6 +2828,12 @@
           renderOverlay();
           return;
         }
+        if (flow && isFlowOccupied(flow)) {
+          showToast("该流水已入账，不能再匹配");
+          dialog.selectedId = "";
+          renderOverlay();
+          return;
+        }
         dialog.step = 2;
         dialog.errors = {};
         renderOverlay();
@@ -2645,7 +2841,7 @@
       }
       if (dialog.step === 2) {
         if (matchCcyMismatch(row, flow, dialog)) {
-          showToast("转账审核单币种与流水币种不一致，请修改");
+          showToast("转账审核单币种与流水币种不一致，请返回上一步选择币种一致的收款流水");
           return;
         }
         if (!validateDialog()) {
@@ -2654,12 +2850,7 @@
           if (target) target.scrollIntoView({ block: "nearest" });
           return;
         }
-        if (matchNeedCover(row, flow, dialog)) {
-          const cap = merchantCoverOf(row.merchantId);
-          if (!cap.any) {
-            showToast("该商户不支持差额补足，请调低期望入账金额，或找相关人员申请配置支持");
-            return;
-          }
+        if (matchNeedStep3(row, flow, dialog)) {
           dialog.step = 3;
           renderOverlay();
           return;
@@ -2734,7 +2925,7 @@
       const holder = document.createElement("div");
       holder.innerHTML = '<div class="mask sub" id="credit-mask"><div class="dialog narrow" style="width:min(420px,100%)" role="dialog">' +
         '<div class="dialog-hd"><h2>修改最终入账金额</h2><button type="button" class="icon-btn" data-act="close-credit" aria-label="关闭">' + ICONS.close + "</button></div>" +
-        '<div class="dialog-bd"><p class="note">自动换算 ' + esc(moneyLabel(st.dst, st.auto)) + "。请输入最终希望入账的金额，并再输入一次确认。第二次不可粘贴。高于自动换算的差额记为汇损补足。</p>" +
+        '<div class="dialog-bd"><p class="note">自动换算 ' + esc(moneyLabel(st.dst, st.auto)) + "。请输入最终希望入账的金额，并再输入一次确认。第二次不可粘贴。高于自动换算的差额记为汇损补足，不得超过自动换算的 1%。公司只补不扣。</p>" +
         '<div class="form-label"><i class="req">*</i>最终入账金额</div><div class="amount-input"><input id="creditAmt1" class="control" inputmode="decimal" placeholder="请输入最终入账金额"><span>' + esc(st.dst) + "</span></div>" +
         '<div class="form-label" style="margin-top:16px"><i class="req">*</i>再次输入</div><div class="amount-input"><input id="creditAmt2" class="control" inputmode="decimal" placeholder="请再次输入" autocomplete="off"><span>' + esc(st.dst) + "</span></div>" +
         '<p class="form-err" id="creditDlgErr"></p></div>' +
@@ -2784,6 +2975,11 @@
         err.textContent = "最终入账金额不能低于自动换算金额 " + (st && st.auto != null ? moneyLabel(st.dst, st.auto) : "");
         return;
       }
+      const fxLimit = fxCap(st.auto);
+      if (money2(n1 - st.auto) > fxLimit) {
+        err.textContent = "超出汇损最大比例 1%，最高可入账 " + moneyLabel(st.dst, money2(st.auto + fxLimit));
+        return;
+      }
       dialog.creditAmt = n1.toFixed(2);
       dialog.creditDirty = n1 !== st.auto;
       if (!dialog.creditDirty) dialog.creditAmt = "";
@@ -2804,7 +3000,11 @@
         return null;
       }
       if (matchCcyMismatch(row, flow, dialog)) {
-        showToast("转账审核单币种与流水币种不一致，请修改");
+        showToast("转账审核单币种与流水币种不一致，请返回上一步选择币种一致的收款流水");
+        return null;
+      }
+      if (isFlowOccupied(flow) && row.flowId !== flow.id) {
+        showToast("该流水已入账，不能再匹配");
         return null;
       }
       if (!validateDialog()) {
@@ -2814,12 +3014,7 @@
         return null;
       }
       let cover = { on: false, fee: 0, fx: 0 };
-      if (matchNeedCover(row, flow, dialog)) {
-        const cap = merchantCoverOf(row.merchantId);
-        if (!cap.any) {
-          showToast("该商户不支持差额补足，请调低期望入账金额，或找相关人员申请配置支持");
-          return null;
-        }
+      if (matchNeedFeeStep(row, flow, dialog)) {
         cover = readMatchCover(row, flow, dialog, false);
         if (cover.error) {
           showToast(cover.error);
@@ -2837,6 +3032,13 @@
     function matchOkLine(label, value) {
       return '<div class="k">' + esc(label) + '</div><div class="v amt">' + esc(value) + "</div>";
     }
+    function matchBasisText(same, fee, fx, expect, flowAmt) {
+      if (fx > 0) return "含汇损补足";
+      if (fee > 0) return "流水 + 手续费补足";
+      if (expect != null && expect < flowAmt) return "按流水全额入账";
+      if (expect != null && expect > flowAmt && fee === 0) return "按流水入账（期望仅作记录）";
+      return same ? "按流水原币入账" : "按自动换算入账";
+    }
 
     function openMatchOkConfirm() {
       const preview = previewMatchSubmit();
@@ -2845,23 +3047,41 @@
       const flow = preview.flow;
       const cover = preview.cover;
       const fxRes = preview.fxRes;
+      const row = preview.row;
+      const dialog = preview.dialog;
       const creditCcy = credit && credit.dst ? credit.dst : flow.currency;
       const creditAmt = credit && credit.amt != null
         ? credit.amt
         : money2(flow.net + (cover.on ? Number(cover.fee) || 0 : 0));
       const fee = cover.on ? Number(cover.fee) || 0 : 0;
       const fx = fxRes.on ? Number(fxRes.fx) || 0 : 0;
+      const expect = matchExpect(row, dialog);
+      const flowAmt = money2(flow.net);
+      const extra = expect != null && expect < flowAmt
+        ? "期望入账低于流水，已按流水全额入账。"
+        : (expect != null && expect > flowAmt && fee === 0 ? "期望入账仅作记录，本笔按流水入账。" : "");
+      const hasCover = fee > 0 || fx > 0;
+      const lead = hasCover
+        ? "请确认商户入账及公司承担后提交。入账金额已含补足，请勿与公司承担加总。"
+        : "请确认商户入账金额后提交。本笔无公司承担。";
+      const coverHtml = hasCover
+        ? '<div class="confirm-sec"><div class="confirm-sec-h">公司承担</div><div class="kv-mini">' +
+          (fee > 0 ? '<div class="k">手续费补足 · ' + esc(flow.currency) + "</div><div>" + esc(moneyLabel(flow.currency, fee)) + "</div>" : "") +
+          (fx > 0 ? '<div class="k">汇损补足 · ' + esc(creditCcy) + "</div><div>" + esc(moneyLabel(creditCcy, fx)) + "</div>" : "") +
+          "</div></div>"
+        : "";
       const old = document.getElementById("match-ok-mask");
       if (old) old.remove();
       const holder = document.createElement("div");
-      holder.innerHTML = '<div class="mask sub" id="match-ok-mask"><div class="dialog narrow" style="width:min(440px,100%)" role="dialog" aria-modal="true" aria-labelledby="match-ok-title">' +
+      holder.innerHTML = '<div class="mask sub" id="match-ok-mask"><div class="dialog narrow" style="width:min(480px,100%)" role="dialog" aria-modal="true" aria-labelledby="match-ok-title">' +
         '<div class="dialog-hd"><h2 id="match-ok-title">确认匹配</h2><button type="button" class="icon-btn" data-act="close-match-ok" aria-label="关闭">' + ICONS.close + "</button></div>" +
-        '<div class="dialog-bd"><p class="note" style="margin-top:0">请确认入账金额及公司承担补足后提交。</p>' +
-        '<div class="kv-mini">' +
-        matchOkLine("入账金额", moneyLabel(creditCcy, creditAmt)) +
-        matchOkLine("手续费差额补足", fee > 0 ? moneyLabel(flow.currency, fee) : "无") +
-        matchOkLine("汇损差额补足", fx > 0 ? moneyLabel(creditCcy, fx) : "无") +
-        "</div></div>" +
+        '<div class="dialog-bd"><p class="note" style="margin-top:0">' + esc(lead) + "</p>" +
+        '<div class="confirm-box"><div class="confirm-sec"><div class="confirm-sec-h">商户入账 · ' + esc(creditCcy) + "</div>" +
+        '<div class="kv-mini">' + matchOkLine("入账金额", moneyLabel(creditCcy, creditAmt)) +
+        '<div class="k">口径</div><div>' + esc(matchBasisText(!credit || credit.same, fee, fx, expect, flowAmt)) + "</div></div></div>" +
+        coverHtml + "</div>" +
+        (extra ? '<p class="note confirm-extra">' + esc(extra) + "</p>" : "") +
+        "</div>" +
         '<div class="dialog-ft"><button type="button" class="btn default" data-act="close-match-ok">取消</button><button type="button" class="btn primary" data-act="match-ok-confirm">确认匹配</button></div></div></div>';
       document.getElementById("overlay").appendChild(holder.firstElementChild);
     }
@@ -2914,7 +3134,16 @@
       row.auditor = "";
       row.auditorMail = "";
       row.auditRemark = "";
-      showToast("已匹配（演示）");
+      lockFlow(flow.txn, {
+        by: "match",
+        merchantId: row.merchantId,
+        merchantName: row.merchantName,
+        accountCcy: row.accountCcy || flow.currency,
+        creditAmt: row.accountCreditAmt,
+        companyFee: row.companyFee,
+        fxLoss: row.fxLoss
+      });
+      showToast("已匹配并入账（演示）");
       closeDialog();
       renderRows();
     }
@@ -2929,6 +3158,11 @@
     }
 
     function pickFlow(id) {
+      const flow = state.flows.find((item) => item.id === id);
+      if (flow && isFlowOccupied(flow)) {
+        showToast("该流水已入账，不能再匹配");
+        return;
+      }
       state.dialog.selectedId = state.dialog.selectedId === id ? "" : id;
       document.querySelectorAll("[data-flow]").forEach((el) => {
         const on = el.dataset.flow === state.dialog.selectedId;
@@ -3009,9 +3243,7 @@
       if (act === "match-ok-confirm") return submitDialog();
       if (act === "close-match-ok") return closeMatchOkConfirm();
       if (act === "edit-ccy" && state.dialog && state.dialog.kind === "match") {
-        syncDialogFields();
-        state.dialog.editCcy = true;
-        renderOverlay();
+        showToast("转账币种只读。币种不一致时请返回上一步换流水");
         return;
       }
       if (act === "edit-expect" && state.dialog && state.dialog.kind === "match") {
@@ -3376,6 +3608,17 @@
           addProofFiles(event.clipboardData.files);
         }
       }
+    });
+
+    window.addEventListener("message", (event) => {
+      const data = event.data || {};
+      if (data.type === "fund-flow-lock" || data.type === "fund-flow-unlock") {
+        if (state.dialog && state.dialog.kind === "match") renderOverlay();
+      }
+    });
+    window.addEventListener("storage", (event) => {
+      if (event.key !== FLOW_LOCK_KEY) return;
+      if (state.dialog && state.dialog.kind === "match") renderOverlay();
     });
 
     document.addEventListener("keydown", (event) => {
