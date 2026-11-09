@@ -903,12 +903,8 @@
         <div class="menu-group">业务入账</div>
         <button class="menu-item" data-view="audit">转账审核</button>
         <button class="menu-item active" data-view="biz">收款明细</button>
-        <div class="menu-group">系统</div>
-        <button class="menu-item" data-view="cfg">推荐配置</button>
       </nav>
       <div class="menu-foot">
-        <button class="menu-item" data-view="fs">飞书通知示意</button>
-        <button class="menu-item" data-view="spec">设计说明</button>
         <div class="ver">v1.5.1</div>
       </div>
     </aside>
@@ -945,7 +941,7 @@ const FX_USD = { USD: 1, EUR: 0.919876, GBP: 0.784512, HKD: 7.781234, CNY: 7.123
 const PLATFORMS = ["Wise", "Airwallex", "Payoneer", "Worldfirst", "PingPong", "Others", "HSBC USD (Swift)", "Bank Wise EUR (SEPA)"];
 
 const qView = new URLSearchParams(location.search).get("view");
-let view = ["biz", "audit", "cfg", "fs", "spec"].includes(qView) ? qView : "biz";
+let view = ["biz", "audit"].includes(qView) ? qView : "biz";
 let bizPlatform = "Airwallex";
 let finStatusFilter = "unclaimed";
 let bizStatusFilter = "all";
@@ -1617,12 +1613,9 @@ function render() {
     btn.classList.toggle("active", btn.dataset.view === view);
   });
   document.querySelector(".avatar").textContent = view === "fin" ? "财" : "业";
-  if (view === "biz") renderBiz();
-  else if (view === "audit") renderAudit();
+  if (view === "audit") renderAudit();
   else if (view === "fin") renderFin();
-  else if (view === "cfg") renderCfg();
-  else if (view === "fs") renderFeishu();
-  else renderSpec();
+  else renderBiz();
 }
 
 function recCols(t) {
@@ -2032,7 +2025,7 @@ function renderFeishu() {
     <div class="fs-sec">方案二：逐笔通知</div>
     <p class="note" style="margin:0 0 12px;max-width:720px">达阈值的每一笔待认领流水发一张卡片。点「立即认领」跳转收款明细，按交易号 + 渠道定位。</p>
     <div class="fs-list">
-      ${cards.length ? cards.map(fsCard).join("") : `<div class="keep">当日没有符合规则的逐笔卡片。可到「推荐配置」调整阈值或进入次日后再看。</div>`}
+      ${cards.length ? cards.map(fsCard).join("") : `<div class="keep">当日没有符合规则的逐笔卡片。可进入次日后再看。</div>`}
     </div>
     <div class="skip-list">
       <h3 style="margin:0 0 8px;font-size:13px">Airwallex 示例：逐笔不发飞书的原因</h3>
