@@ -339,7 +339,7 @@
     .claim-sticky .claim-sec { margin-bottom: 16px; }
     .modal.wide .modal-b { padding-top: 16px; }
     .modal-f {
-      padding: 12px 24px 16px; display: flex; justify-content: flex-end; gap: 8px;
+      padding: 12px 24px 16px; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px;
       border-top: 1px solid var(--line); flex-shrink: 0; background: #fff;
     }
     .x {
@@ -1027,7 +1027,7 @@ const SCENE_CASES = [
   { code: "LOW", time: "2026-11-09 09:06:00", amount: 1860, merchantId: "3639", expect: 1430, scene: "期望低于流水，仍按流水全额入账", conf: 91, payer: "HANGZHOU RETAIL LOW" },
   { code: "CCY", time: "2026-11-09 09:07:00", amount: 326.4, currency: "EUR", merchantId: "14229", expect: 326.4, orderCcy: "USD", scene: "审核单 USD、流水 EUR，应返回换单/换流水", conf: 80, payer: "EURO SCENE BUYER" },
   { code: "FX-CAP", time: "2026-11-09 09:08:00", amount: 2000, merchantId: "88021", expect: 2000, scene: "仅汇损补足。把最终入账调高可试 1% 上限", conf: 89, payer: "XUNDA SCENE FX" },
-  { code: "DUP", time: "2026-11-09 09:09:00", amount: 450, merchantId: "88021", expect: 450, scene: "未创建会撞上已有待匹配单，必须关联", conf: 94, payer: "XUNDA SCENE DUP" },
+  { code: "DUP", time: "2026-11-09 09:09:00", amount: 450, merchantId: "88021", expect: 450, scene: "未创建会撞上已有待匹配单，可关联或继续认领", conf: 94, payer: "XUNDA SCENE DUP" },
   { code: "LINE", time: "2026-11-09 09:10:00", amount: 800, merchantId: "71008", expect: 800, scene: "推荐履约商户。改业务线为广告可看不一致提示", conf: 93, payer: "HUAMAO SCENE LINE" },
   { code: "REC-LOW", time: "2026-11-09 09:11:00", amount: 500, merchantId: "14229", expect: 500, scene: "推荐 55%，低于阈值，不预填", conf: 55, payer: "STARLINK SCENE LOWREC" },
   { code: "NOREC", time: "2026-11-09 09:12:00", amount: 700, merchantId: "22617", expect: 700, scene: "无推荐，需手工选商户和业务线", noRec: true, payer: "YUANHANG SCENE NOREC" }
@@ -2388,20 +2388,26 @@ function pendingOrderHintHtml(orders, extra) {
     <div class="alert alert-warn" style="margin-bottom:12px">该商户存在已发起预充且未匹配的转账审核单，建议核实是否应匹配已有审核单，避免重复创建。${extra || ""}</div>
     <p class="note confirm-orders">待匹配单号：<span class="mono">${nos}</span></p>`;
 }
-function openSubDialog({ title, bodyHtml, cancelText, okText, onCancel, onOk }) {
+function openSubDialog({ title, bodyHtml, cancelText, okText, altText, onCancel, onOk, onAlt }) {
   const el = $("subMask");
+  const cancel = cancelText ? `<button class="btn" type="button" id="subDlgCancel">${cancelText}</button>` : "";
+  const alt = altText ? `<button class="btn" type="button" id="subDlgAlt">${altText}</button>` : "";
   el.innerHTML = `
     <div class="modal mini">
       <div class="modal-h">${title}<button class="x" id="subDlgX" type="button">×</button></div>
       <div class="modal-b">${bodyHtml}</div>
       <div class="modal-f">
-        <button class="btn" type="button" id="subDlgCancel">${cancelText}</button>
+        ${cancel}
+        ${alt}
         <button class="btn btn-primary" type="button" id="subDlgOk">${okText}</button>
       </div>
     </div>`;
   el.classList.add("show");
   $("subDlgX").onclick = () => closeSubMask();
-  $("subDlgCancel").onclick = () => { closeSubMask(); if (onCancel) onCancel(); };
+  const cancelBtn = $("subDlgCancel");
+  if (cancelBtn) cancelBtn.onclick = () => { closeSubMask(); if (onCancel) onCancel(); };
+  const extra = $("subDlgAlt");
+  if (extra) extra.onclick = () => { if (onAlt) onAlt(); };
   $("subDlgOk").onclick = () => { if (onOk) onOk(); };
 }
 function backToExistingOrders(t) {
@@ -2412,23 +2418,27 @@ function backToExistingOrders(t) {
   paintClaimModal(t);
 }
 function confirmUncreatedProceed(t, mode) {
+  const go = () => {
+    if (mode === "cover") {
+      claimDraft.step = 3;
+      paintClaimModal(t);
+      return;
+    }
+    openClaimOkConfirm();
+  };
   const orders = unmatchedPrechargeOrders(claimDraft.merchantId);
   if (orders.length > 0) {
     openSubDialog({
       title: "存在未匹配转账审核单",
-      bodyHtml: pendingOrderHintHtml(orders, "不可再生成新单，请关联已有审核单后再认领。"),
-      cancelText: "取消",
+      bodyHtml: pendingOrderHintHtml(orders, "也可忽略并继续认领，系统将生成新的转账审核单。"),
+      altText: "继续认领",
       okText: "去关联已有审核单",
+      onAlt: () => { closeSubMask(); go(); },
       onOk: () => { closeSubMask(); backToExistingOrders(t); }
     });
     return;
   }
-  if (mode === "cover") {
-    claimDraft.step = 3;
-    paintClaimModal(t);
-    return;
-  }
-  openClaimOkConfirm();
+  go();
 }
 function bindClaimXferCcy(t) {
   const ccy = $("fXferCcy");
@@ -3659,7 +3669,7 @@ function renderSpec() {
         <li>转账币种只读。与流水币种不一致时，返回上一步换流水或换审核单，不允许改审核单币种放行。</li>
         <li>期望入账可改。高于流水且商户支持补足时进入入账确认；不支持或关闭公司承担时，按流水入账，期望仅作记录。</li>
         <li>期望低于流水时仍按流水全额入账，差额不退不拆。若需部分入账，先拆分流水。</li>
-        <li>必须上传转账凭证；预填不代替凭证。该商户已有待匹配审核单时，必须关联已有单，不可忽略再生成新单。</li>
+        <li>必须上传转账凭证；预填不代替凭证。该商户已有待匹配审核单时会提示，可去关联已有单，也可忽略并继续认领生成新单。</li>
         <li>确认后立即充值，无审批。一笔流水只能入账一次。纠错走匹配退回：按最终入账金额扣回（含当时的手续费补足、汇损补足），流水回到待认领并解锁。</li>
       </ul>
 
