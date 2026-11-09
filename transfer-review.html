@@ -11,7 +11,7 @@
     商户、人名、邮箱、交易号、付款账号和文件名全部虚构，页面上直接展示。
     不使用业务截图中的原始记录。
     相对基线的改动记入同目录「需求调整.md」。
-    已并入「收款流水辅助认领」原型的「转账审核」菜单。Pages 入口密码由外壳 index.html 负责；本页单独打开时同样需要密码。
+    已并入「流水匹配支持差额补足与入账确认」原型的「转账审核」菜单。Pages 入口密码由外壳 index.html 负责；本页单独打开时同样需要密码。
     此后本文件上的改动属于本次需求新内容；不回写 maxmabiz/fund-transfer-review。
   -->
   <style>
@@ -578,10 +578,10 @@
     background: #f5f5f5; font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
   }
   #gate .card {
-    width: min(400px, calc(100% - 32px)); background: #fff; border-radius: 8px;
+    width: min(440px, calc(100% - 32px)); background: #fff; border-radius: 8px;
     box-shadow: 0 6px 16px rgba(0,0,0,.08); padding: 28px 28px 24px;
   }
-  #gate h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: rgba(0,0,0,.88); }
+  #gate h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; line-height: 26px; color: rgba(0,0,0,.88); }
   #gate p { margin: 0 0 16px; color: rgba(0,0,0,.45); }
   #gate input {
     width: 100%; height: 36px; padding: 0 12px; border: 1px solid #d9d9d9; border-radius: 6px;
@@ -603,7 +603,7 @@
 </script>
 <div id="gate">
   <form class="card" id="gate-form">
-    <h1>收款流水辅助认领原型</h1>
+    <h1>流水匹配支持差额补足与入账确认</h1>
     <p>请输入访问密码</p>
     <input id="gate-pass" type="password" autocomplete="current-password" placeholder="访问密码" aria-label="访问密码">
     <p class="err" id="gate-err" hidden>密码不正确</p>

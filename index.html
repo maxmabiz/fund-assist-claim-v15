@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-store" />
-  <title>Fund · 收款流水智能推荐</title>
+  <title>Fund · 流水匹配支持差额补足与入账确认</title>
   <style>
     :root {
       --bg: #f5f5f5;
@@ -840,10 +840,10 @@
     background: #f5f5f5;
   }
   #gate .card {
-    width: min(400px, calc(100% - 32px)); background: #fff; border-radius: 8px;
+    width: min(440px, calc(100% - 32px)); background: #fff; border-radius: 8px;
     box-shadow: 0 6px 16px rgba(0,0,0,.08); padding: 28px 28px 24px;
   }
-  #gate h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+  #gate h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; line-height: 26px; }
   #gate p { margin: 0 0 16px; color: rgba(0,0,0,.45); }
   #gate input {
     width: 100%; height: 36px; padding: 0 12px; border: 1px solid #d9d9d9; border-radius: 6px;
@@ -863,7 +863,7 @@
 </script>
 <div id="gate">
   <form class="card" id="gate-form">
-    <h1>收款流水辅助认领原型</h1>
+    <h1>流水匹配支持差额补足与入账确认</h1>
     <p>请输入访问密码</p>
     <input id="gate-pass" type="password" autocomplete="current-password" placeholder="访问密码" aria-label="访问密码">
     <p class="err" id="gate-err" hidden>密码不正确</p>
@@ -3615,7 +3615,7 @@ function renderSpec() {
   $("app").innerHTML = `
     <div class="crumb">Fund &nbsp;&gt;&nbsp; 原型 &nbsp;&gt;&nbsp; <b>设计说明</b></div>
     <div class="keep spec">
-      <h2>收款流水智能推荐 · 增量设计说明</h2>
+      <h2>流水匹配支持差额补足与入账确认 · 增量设计说明</h2>
       <p class="lead">本期方案：自动匹配失败后的待认领流水，做智能推荐；达阈值则飞书通知主维护人。推荐成功不等于自动匹配成功，不能入账。认领与匹配都是入账动作，同一条流水只能走其中一条，先提交的锁定。</p>
 
       <h3>1. 本期改哪里</h3>
