@@ -114,10 +114,10 @@
     }
 
     .page { padding: 16px 20px 24px; flex: 1; }
-    .shell.audit-mode { height: 100vh; overflow: hidden; }
+    .shell.audit-mode, .shell.track-mode { height: 100vh; overflow: hidden; }
     .shell.audit-mode .topbar { display: none; }
-    .shell.audit-mode .main { min-height: 0; }
-    .shell.audit-mode .page {
+    .shell.audit-mode .main, .shell.track-mode .main { min-height: 0; }
+    .shell.audit-mode .page, .shell.track-mode .page {
       padding: 0; min-height: 0; overflow: hidden; display: flex;
     }
     .audit-frame { width: 100%; height: 100%; border: 0; background: #f5f5f5; }
@@ -901,8 +901,9 @@
       <div class="brand"><span class="brand-mark">F</span> Fund</div>
       <nav class="menu">
         <div class="menu-group">业务入账</div>
-        <button class="menu-item" data-view="audit">转账审核</button>
-        <button class="menu-item active" data-view="biz">收款明细</button>
+        <button class="menu-item active" data-view="audit">转账审核</button>
+        <button class="menu-item" data-view="biz">收款明细</button>
+        <button class="menu-item" data-view="track">预充追踪</button>
       </nav>
       <div class="menu-foot">
         <div class="ver">v1.5.1</div>
@@ -941,7 +942,7 @@ const FX_USD = { USD: 1, EUR: 0.919876, GBP: 0.784512, HKD: 7.781234, CNY: 7.123
 const PLATFORMS = ["Wise", "Airwallex", "Payoneer", "Worldfirst", "PingPong", "Others", "HSBC USD (Swift)", "Bank Wise EUR (SEPA)"];
 
 const qView = new URLSearchParams(location.search).get("view");
-let view = ["biz", "audit"].includes(qView) ? qView : "biz";
+let view = ["biz", "audit", "track"].includes(qView) ? qView : "audit";
 let bizPlatform = "Airwallex";
 let finStatusFilter = "unclaimed";
 let bizStatusFilter = "all";
@@ -1609,12 +1610,14 @@ function counts() {
 
 function render() {
   document.querySelector(".shell").classList.toggle("audit-mode", view === "audit");
+  document.querySelector(".shell").classList.toggle("track-mode", view === "track");
   document.querySelectorAll(".menu-item").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.view === view);
   });
   document.querySelector(".avatar").textContent = view === "fin" ? "财" : "业";
   if (view === "audit") renderAudit();
   else if (view === "fin") renderFin();
+  else if (view === "track") renderTrack();
   else renderBiz();
 }
 
@@ -1821,7 +1824,11 @@ function renderBiz() {
 }
 
 function renderAudit() {
-  $("app").innerHTML = '<iframe class="audit-frame" src="transfer-review.html?v=v156" title="转账审核"></iframe>';
+  $("app").innerHTML = '<iframe class="audit-frame" src="transfer-review.html?v=v166" title="转账审核"></iframe>';
+}
+
+function renderTrack() {
+  $("app").innerHTML = '<iframe class="audit-frame" src="prepaid-track.html?embed=1&v=11" title="预充追踪"></iframe>';
 }
 
 function renderFin() {

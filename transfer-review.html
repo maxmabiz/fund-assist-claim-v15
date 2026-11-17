@@ -87,7 +87,12 @@
       background: #fff; padding: 0 11px; outline: none;
     }
     .control::placeholder { color: rgba(0, 0, 0, 0.25); }
+    .control:disabled {
+      background: #f5f5f5; color: rgba(0, 0, 0, 0.88); cursor: not-allowed; border-color: #d9d9d9;
+    }
+    .control:disabled::placeholder { color: rgba(0, 0, 0, 0.25); }
     .control:hover { border-color: #1677ff; }
+    .control:disabled:hover { border-color: #d9d9d9; }
     .control:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12); }
     select.control {
       appearance: none;
@@ -146,8 +151,9 @@
     .muted, .dash { color: rgba(0, 0, 0, 0.25); }
     .stack { display: flex; flex-direction: column; gap: 2px; line-height: 1.45; max-width: 200px; }
     .sub { color: rgba(0, 0, 0, 0.45); font-size: 12px; }
-    .tip { display: inline-flex; align-items: center; gap: 4px; position: relative; }
-    .tip .info { border: 0; background: transparent; color: rgba(0, 0, 0, 0.45); padding: 0; display: grid; }
+    .tip { display: inline-flex; align-items: center; flex-wrap: nowrap; gap: 4px; position: relative; white-space: nowrap; }
+    .tip-text { white-space: nowrap; flex: none; }
+    .tip .info { border: 0; background: transparent; color: rgba(0, 0, 0, 0.45); padding: 0; display: grid; flex: none; }
     .tip .info { cursor: help; }
     .empty { text-align: center; color: rgba(0, 0, 0, 0.45); padding: 40px 16px; }
 
@@ -198,8 +204,12 @@
     .dialog.revoke { width: min(760px, 100%); }
     .dialog.precharge { width: min(800px, 100%); }
     .sheet { width: 100%; min-width: 0; border-collapse: collapse; margin: 0 0 16px; table-layout: fixed; }
-    .sheet th, .sheet td { border: 1px solid #f0f0f0; padding: 10px 12px; font-weight: 400; text-align: left; line-height: 22px; white-space: normal; word-break: break-all; overflow: visible; }
-    .sheet th { width: 22%; background: #fafafa; color: rgba(0, 0, 0, 0.88); vertical-align: middle; }
+    .sheet th, .sheet td { border: 1px solid #f0f0f0; padding: 10px 12px; font-weight: 400; text-align: left; line-height: 22px; overflow: visible; }
+    .sheet td { white-space: normal; word-break: break-all; }
+    .sheet th { width: 22%; background: #fafafa; color: rgba(0, 0, 0, 0.88); vertical-align: middle; white-space: nowrap; }
+    .dialog.precharge .sheet { table-layout: auto; }
+    .dialog.precharge .sheet th { width: 1%; white-space: nowrap; }
+    .dialog.precharge .sheet th .tip { display: inline-flex; flex-wrap: nowrap; white-space: nowrap; }
     .sheet td.num { text-align: right; }
     .sheet .link-num { color: #1677ff; font-weight: 600; }
     .amount-input { display: flex; align-items: center; border: 1px solid #d9d9d9; border-radius: 6px; background: #fff; }
@@ -284,6 +294,11 @@
     .create-bd { padding: 16px 24px 8px; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 32px; }
     .span2 { grid-column: 1 / -1; }
+    .form-grid > .section-title {
+      margin: 2px 0 -8px; padding-top: 14px; border-top: 1px solid #f0f0f0;
+      font-size: 13px; line-height: 22px; color: rgba(0, 0, 0, 0.88);
+    }
+    .form-grid > .section-title.first { margin-top: 0; padding-top: 0; border-top: 0; }
     .form-label { display: block; margin-bottom: 8px; }
     .amount-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 24px; margin-top: 16px; }
     .cust {
@@ -665,19 +680,23 @@
       "71008": { fee: true },
       "88021": { fx: true },
       "55210": {},
+      "56102": {},
       "22617": {}
     };
     const MERCHANT_ACCOUNT = {
       "43827": "CNH",
       "3639": "CNH",
       "88021": "CNH",
-      "55210": "EUR"
+      "55210": "EUR",
+      "56102": "EUR"
     };
     const SCENE_MERCHANTS = {
       "14229": "星辰出海-广告主账户",
       "3639": "万里汇零售测试中",
       "71008": "华贸商城-主账户",
       "88021": "迅达供应链-代发账户",
+      "55210": "北辰广告-欧洲账户",
+      "56102": "欧港供应链-欧洲账户",
       "22617": "远航支付-美国账户"
     };
     const SCENE_CASES = [
@@ -844,10 +863,17 @@
       help: svg('<circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.1 1-1.1 1.9"/><path d="M12 17.2h.01"/>', 14),
       upload: svg('<path d="M12 16V6"/><path d="M8 9.5 12 5.5l4 4"/><path d="M5 19h14"/>', 28)
     };
-    const AMOUNT_TIP = "期望充入客户资金账户的金额，该金额应小于客户实际转账金额（转账凭证中的金额）。";
+    const AMOUNT_TIP = "期望充入商户资金账户的金额，使用入账币种。与转账币种相同时，应小于或等于转账金额；币种不同时按账户币种填写，不能与转账金额直接比较。";
+    const ACCOUNT_CCY_TIP = "商户资金账户的币种。随所选客户自动带出，不可修改。";
 
+    function tipLabel(text, tip) {
+      return '<span class="tip"><span class="tip-text">' + esc(text) + '</span><button type="button" class="info" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + ICONS.help + "</button></span>";
+    }
     function amountLabel() {
-      return '<span class="tip">期望入账金额<button type="button" class="info" data-tip="' + esc(AMOUNT_TIP) + '" aria-label="' + esc(AMOUNT_TIP) + '">' + ICONS.help + "</button></span>";
+      return tipLabel("期望入账金额", AMOUNT_TIP);
+    }
+    function accountCcyLabel() {
+      return tipLabel("入账币种", ACCOUNT_CCY_TIP);
     }
 
     const CUSTOMERS = [
@@ -905,6 +931,8 @@
           transferDate: amount == null ? "-" : when.slice(0, 10),
           payer: PAYERS[(index + 3) % PAYERS.length],
           currency: "USD",
+          transferAmt: amount,
+          accountCcy: MERCHANT_ACCOUNT[shop[0]] || "USD",
           amount: amount,
           voucher: voucherName,
           shots: shots,
@@ -924,7 +952,63 @@
         attachSettlement(rows[rows.length - 1], index);
       }
       SCENE_CASES.slice().reverse().forEach((s) => rows.unshift(makeSceneReview(s)));
+      rows.unshift(makeUsdEurPrechargeRow());
       return rows;
+    }
+
+    function makeUsdEurPrechargeRow() {
+      const when = "2026-11-17 18:30:00";
+      const voucher = "SC-USD-EUR.pdf";
+      return {
+        id: "sc-usd-eur",
+        reviewNo: "TR-SC-USD-EUR",
+        merchantId: "56102",
+        merchantName: "欧港供应链-欧洲账户",
+        merchantUuid: "scene-USD-EUR",
+        uniqueId: "ops@ougang-eu.test",
+        biz: "履约",
+        submitAt: when,
+        submitter: "周宁",
+        submitterMail: "zhou.ning@harbor-demo.test",
+        platform: "Airwallex",
+        bizTxn: "SC-USD-EUR",
+        transferDate: when.slice(0, 10),
+        payer: "OUGANG EUROPE FULFILL",
+        currency: "USD",
+        transferAmt: 2180,
+        accountCcy: "EUR",
+        amount: 2000,
+        voucher: voucher,
+        shots: [voucher],
+        others: [],
+        assign: "-",
+        confirmStatus: "已确认",
+        status: "已匹配",
+        allocated: false,
+        internalNote: "转账美元 / 账户欧元，可预充",
+        precharge: "否",
+        prechargeNo: "",
+        expectedAt: "",
+        opsGroup: "",
+        proofFiles: [],
+        prechargeRemark: "",
+        flowId: "seed-usd-eur",
+        sceneTxn: "SC-USD-EUR",
+        prechargeCurrency: "",
+        prechargeAmount: null,
+        creditCurrency: "EUR",
+        creditAmount: 2005.33,
+        payPlatform: "Airwallex",
+        flowTxn: "zzusd2eur0000000001a1",
+        matchAt: "2026-11-17 18:40:12",
+        matcher: CURRENT_USER[0],
+        matcherMail: CURRENT_USER[1],
+        matchRemark: "转账 USD 已匹配，入账 EUR",
+        auditAt: "2026-11-17 18:45:00",
+        auditor: PEOPLE[1][0],
+        auditorMail: PEOPLE[1][1],
+        auditRemark: "审核通过"
+      };
     }
 
     function makeSceneReview(s) {
@@ -947,6 +1031,8 @@
         transferDate: s.time.slice(0, 10),
         payer: s.payer || name,
         currency: s.orderCcy || s.currency || "USD",
+        transferAmt: s.amount != null && s.expect != null ? Math.max(Number(s.amount), Number(s.expect)) : (s.amount != null ? s.amount : s.expect),
+        accountCcy: MERCHANT_ACCOUNT[s.merchantId] || "USD",
         amount: s.expect != null ? s.expect : s.amount,
         voucher: voucher,
         shots: [voucher],
@@ -1315,7 +1401,9 @@
         kv("业务类型：", esc(BIZ_CODE[row.biz] || row.biz)) +
         kv("支付平台：", '<span class="low">' + esc(row.platform) + "</span>") +
         kv("转账凭证号：", showText(row.bizTxn)) +
-        kv("期望入账金额：", row.amount == null ? "-" : esc(moneyLabel(row.currency, row.amount))) +
+        kv("转账金额：", row.transferAmt == null ? "-" : esc(moneyLabel(row.currency, row.transferAmt))) +
+        kv("入账币种：", esc(row.accountCcy || accountCcyOf(row.merchantId))) +
+        kv("期望入账金额：", row.amount == null ? "-" : esc(moneyLabel(row.accountCcy || row.currency, row.amount))) +
         '</div><div class="match-files">' +
         '<div class="attach-field"><span>转账凭证</span>' + voucher + "</div>" +
         '<div class="attach-field"><span>其它转账附件</span>' + otherBody + add + "</div></div>";
@@ -1831,7 +1919,7 @@
     function emptyCreate() {
       return {
         biz: "", customer: "", currency: "", platform: "", txn: "", date: "",
-        payer: "", amount: "", split: false, ratios: {}, note: "", voucher: null, files: [], errors: {}
+        payer: "", transferAmt: "", amount: "", split: false, ratios: {}, note: "", voucher: null, files: [], errors: {}
       };
     }
 
@@ -1843,7 +1931,7 @@
     function syncCreate() {
       if (!state.dialog || state.dialog.kind !== "create") return;
       const form = state.dialog.form;
-      ["txn", "date", "payer", "amount", "note"].forEach((key) => {
+      ["txn", "date", "payer", "transferAmt", "amount", "note"].forEach((key) => {
         const el = document.getElementById("create-" + key);
         if (el) form[key] = el.value;
       });
@@ -2063,14 +2151,21 @@
       syncCreate();
       const form = state.dialog.form;
       const errors = {};
+      const customer = createCustomer();
       if (!form.biz) errors.biz = "请选择子业务";
       if (!form.customer) errors.customer = "请输入客户";
       if (!form.currency) errors.currency = "请选择转账币种";
       if (!form.platform) errors.platform = "请选择支付平台";
       if (!form.txn.trim()) errors.txn = "请输入转账交易ID";
+      const transferText = String(form.transferAmt || "").trim();
+      const transferNum = Number(transferText);
+      if (!transferText || !Number.isFinite(transferNum) || transferNum <= 0) errors.transferAmt = "请输入转账金额";
       const amountText = form.amount.trim();
       const amountNum = Number(amountText);
       if (!amountText || !Number.isFinite(amountNum) || amountNum <= 0) errors.amount = "请输入期望入账金额";
+      else if (!errors.transferAmt && form.currency && customer && accountCcyOf(customer.id) === form.currency && amountNum > transferNum) {
+        errors.amount = "期望入账金额应小于或等于转账金额";
+      }
       const accounts = customerAccounts(createCustomer());
       if (form.split && accounts.length > 1) {
         accounts.forEach((item) => {
@@ -2089,16 +2184,19 @@
       if (!validateCreate()) {
         renderOverlay();
         const failed = state.dialog && state.dialog.form.errors;
-        const slot = failed && failed.amount
-          ? document.getElementById("create-amount")
-          : document.querySelector('[data-slot="voucher"]');
-        if (failed && (failed.amount || failed.voucher) && slot) slot.scrollIntoView({ block: "nearest" });
+        const slot = failed && failed.transferAmt
+          ? document.getElementById("create-transferAmt")
+          : failed && failed.amount
+            ? document.getElementById("create-amount")
+            : document.querySelector('[data-slot="voucher"]');
+        if (failed && (failed.transferAmt || failed.amount || failed.voucher) && slot) slot.scrollIntoView({ block: "nearest" });
         return;
       }
       const form = state.dialog.form;
       const customer = createCustomer();
       const accounts = customerAccounts(customer);
       const amount = form.amount.trim() === "" ? null : Number(form.amount);
+      const transferNum = Number(String(form.transferAmt || "").trim());
       const assign = form.split && accounts.length > 1
         ? accounts.map((item) => item.biz + " " + formatRatio(parseRatio(form.ratios[item.biz])) + "%").join(" / ")
         : "-";
@@ -2120,6 +2218,8 @@
         transferDate: form.date || "-",
         payer: form.payer.trim() || "-",
         currency: form.currency,
+        transferAmt: transferNum,
+        accountCcy: accountCcyOf(customer.id),
         amount: amount,
         voucher: form.voucher.name,
         others: form.files.map((file) => file.name),
@@ -2175,6 +2275,7 @@
         return '<option value="' + esc(item.id) + '"' + (item.id === form.customer ? " selected" : "") + ">" + esc(label) + "</option>";
       }).join("");
       const radio = (value) => '<label><input type="radio" name="create-biz" value="' + value + '"' + (form.biz === value ? " checked" : "") + ">" + value + "</label>";
+      const accountCcy = customer ? accountCcyOf(customer.id) : "";
       const bad = (key) => errors[key] ? " bad" : "";
       const err = (key) => errors[key] ? '<p class="err">' + esc(errors[key]) + "</p>" : "";
       const voucherFile = form.voucher
@@ -2187,21 +2288,26 @@
       return '<div class="mask" id="mask"><div class="dialog create" role="dialog" aria-modal="true" aria-labelledby="create-title">' +
         '<div class="dialog-hd"><h2 id="create-title">代客提交线下转账</h2><button type="button" class="icon-btn" data-act="close" aria-label="关闭">' + ICONS.close + "</button></div>" +
         '<div class="dialog-bd create-bd"><div class="form-grid">' +
+        '<h3 class="section-title first span2">客户</h3>' +
         '<div><div class="form-label"><i class="req">*</i>子业务</div><div class="radios">' + radio("广告") + radio("履约") + radio("拒付") + "</div>" + err("biz") + "</div>" +
         '<div><div class="form-label"><i class="req">*</i>客户</div><select id="create-customer" class="' + (form.customer ? "control" : "control is-placeholder") + bad("customer") + '" aria-label="客户"><option value="">请选择客户</option>' + options + "</select>" + err("customer") + "</div>" +
         (customer ? '<div class="cust span2"><div><em>商户ID</em>' + esc(customer.id) + "</div><div><em>ERP代码</em>" + esc(customer.erp) + "</div><div><em>业务经理</em>" + esc(customer.manager) + "</div><div><em>业务员</em>" + esc(customer.staff) + "</div></div>" : "") +
+        '<h3 class="section-title span2">客户转账</h3>' +
         '<div><div class="form-label"><i class="req">*</i>转账币种</div><select id="create-currency" class="' + (form.currency ? "control" : "control is-placeholder") + bad("currency") + '" aria-label="转账币种">' + optionList("请选择转账币种", form.currency, ["USD", "EUR", "HKD", "GBP", "CNY"]) + "</select>" + err("currency") + "</div>" +
+        '<div><div class="form-label"><i class="req">*</i>转账金额</div><div class="amount-input' + (errors.transferAmt ? " bad" : "") + '"><input id="create-transferAmt" class="control" inputmode="decimal" placeholder="请输入转账金额" aria-label="转账金额" value="' + esc(form.transferAmt) + '"><span>' + esc(form.currency || "币种") + "</span></div>" + err("transferAmt") + "</div>" +
         '<div><div class="form-label"><i class="req">*</i>转账平台</div><select id="create-platform" class="' + (form.platform ? "control" : "control is-placeholder") + bad("platform") + '" aria-label="转账平台">' + optionList("请选择支付平台", form.platform, PAY_PLATFORMS) + "</select>" + err("platform") + "</div>" +
         '<div><div class="form-label"><i class="req">*</i>交易ID</div><input id="create-txn" class="control' + bad("txn") + '" placeholder="请输入转账交易ID" aria-label="交易ID" value="' + esc(form.txn) + '">' + err("txn") + "</div>" +
         '<div><div class="form-label">转账日期</div><div class="control range"><span class="range-text' + (form.date ? "" : " placeholder") + '" id="create-date-label">' + esc(form.date || "请选择转账日期") + '</span><button type="button" class="cal" data-act="pick" data-which="create-date" aria-label="打开日期">' + ICONS.calendar + '</button><input class="proxy" id="create-date" type="date" aria-label="转账日期" value="' + esc(form.date) + '"></div></div>' +
         '<div><div class="form-label">付款人名称</div><input id="create-payer" class="control" placeholder="请输入付款人名称" aria-label="付款人名称" value="' + esc(form.payer) + '"></div>' +
-        '<div><div class="form-label"><i class="req">*</i>' + amountLabel() + '</div><input id="create-amount" class="control' + bad("amount") + '" inputmode="decimal" placeholder="请输入期望入账金额" aria-label="期望入账金额" value="' + esc(form.amount) + '">' + err("amount") + "</div>" +
-        splitHtml(customer) +
         '<div class="upload-pair span2">' +
         '<div class="upload-slot" data-slot="voucher"><div class="form-label"><i class="req">*</i>转账凭证</div><p class="upload-hint">仅 1 个，图片或 PDF，20M 内</p>' +
         uploadZone("create-voucher", false, !!errors.voucher) + voucherFile + err("voucher") + "</div>" +
         '<div class="upload-slot" data-slot="extra"><div class="form-label">其它转账附件</div><p class="upload-hint">最多 3 个，图片或 PDF，单个 20M 内</p>' +
         uploadZone("create-files", true, false) + (files ? '<ul class="file-list">' + files + "</ul>" : "") + "</div></div>" +
+        '<h3 class="section-title span2">客户入账</h3>' +
+        '<div><div class="form-label"><i class="req">*</i>' + accountCcyLabel() + '</div><input class="control" value="' + esc(accountCcy) + '" placeholder="请先选择客户" aria-label="入账币种" disabled>' + "</div>" +
+        '<div><div class="form-label"><i class="req">*</i>' + amountLabel() + '</div><div class="amount-input' + (errors.amount ? " bad" : "") + '"><input id="create-amount" class="control" inputmode="decimal" placeholder="请输入期望入账金额" aria-label="期望入账金额" value="' + esc(form.amount) + '"><span>' + esc(accountCcy || "币种") + "</span></div>" + err("amount") + "</div>" +
+        splitHtml(customer) +
         '<div class="span2"><div class="form-label">内部备注</div><div class="void-box">' +
         '<textarea id="create-note" class="control" maxlength="1000" placeholder="请输入内部备注">' + esc(form.note) + "</textarea>" +
         '<span class="void-count" id="create-count">' + form.note.length + " / 1000</span></div></div>" +
@@ -2418,6 +2524,18 @@
       return '<div class="file-rows">' + names.map((name, index) => attachFile(name, kind, index)).join("") + "</div>";
     }
 
+    function rowAccountCcy(row) {
+      return (row && (row.accountCcy || accountCcyOf(row.merchantId))) || "";
+    }
+    function rowExpectCcy(row) {
+      return (row && (row.accountCcy || row.currency)) || "";
+    }
+    function prechargeCustomerAmountRows(row) {
+      const transferAmt = row.transferAmt == null ? "-" : moneyLabel(row.currency, row.transferAmt);
+      const expect = row.amount == null ? "-" : moneyLabel(rowExpectCcy(row), row.amount);
+      return "<tr><th>转账币种</th><td>" + esc(row.currency || "-") + "</td><th>转账金额</th><td>" + esc(transferAmt) + "</td></tr>" +
+        "<tr><th>" + accountCcyLabel() + "</th><td>" + esc(rowAccountCcy(row) || "-") + "</td><th>" + amountLabel() + "</th><td>" + esc(expect) + "</td></tr>";
+    }
     function prechargeAttachRow() {
       const row = currentRow();
       return '<tr class="attach-split"><th>转账凭证</th><td colspan="3">' + attachFiles(row.voucher ? [row.voucher] : [], "voucher") + "</td></tr>" +
@@ -2554,10 +2672,9 @@
     function fulfillPrechargeHtml(row) {
       const dialog = state.dialog;
       const errors = dialog.errors || {};
-      const amount = row.amount == null ? "-" : money(row.amount);
-      const cap = row.amount == null ? "" : money(row.amount);
+      const cap = row.transferAmt == null ? "" : moneyLabel(row.currency, row.transferAmt);
       const biz = "fulfill";
-      const placeholder = cap ? "请输入预充金额，不可大于期望入账金额 " + cap : "请输入预充金额";
+      const placeholder = cap ? "请输入预充金额，不可大于转账金额 " + cap : "请输入预充金额";
       return '<div class="mask" id="mask"><div class="dialog precharge" role="dialog" aria-modal="true" aria-labelledby="precharge-title">' +
         '<div class="dialog-hd"><h2 id="precharge-title">预充</h2><button type="button" class="icon-btn" data-act="close" aria-label="关闭">' + ICONS.close + "</button></div>" +
         '<div class="dialog-bd">' + guideHtml() +
@@ -2565,7 +2682,7 @@
         '<table class="sheet"><tbody>' +
         "<tr><th>商户ID</th><td>" + esc(row.merchantId) + "</td><th>商户邮箱</th><td>" + esc(row.uniqueId) + "</td></tr>" +
         "<tr><th>商户名称</th><td>" + esc(row.merchantName) + "</td><th>子业务</th><td>" + biz + "</td></tr>" +
-        "<tr><th>客户转账币种</th><td>" + esc(row.currency) + "</td><th>期望入账金额</th><td>" + esc(amount) + "</td></tr>" +
+        prechargeCustomerAmountRows(row) +
         prechargeAttachRow() +
         "</tbody></table>" +
         '<div class="notice"><i>i</i><span>履约业务预充提交后将发起飞书审批，请等待审批结果。</span></div>' +
@@ -2589,7 +2706,6 @@
       const dialog = state.dialog;
       const quota = prechargeQuota(row);
       const biz = { "履约": "fulfill", "广告": "ad", "物流": "logistics" }[row.biz] || row.biz;
-      const amount = row.amount == null ? "-" : money(row.amount);
       const errors = dialog.errors || {};
       return '<div class="mask" id="mask"><div class="dialog precharge" role="dialog" aria-modal="true" aria-labelledby="precharge-title">' +
         '<div class="dialog-hd"><h2 id="precharge-title">预充</h2><button type="button" class="icon-btn" data-act="close" aria-label="关闭">' + ICONS.close + "</button></div>" +
@@ -2598,7 +2714,7 @@
         '<table class="sheet"><tbody>' +
         "<tr><th>商户ID</th><td>" + esc(row.merchantId) + "</td><th>商户邮箱</th><td>" + esc(row.uniqueId) + "</td></tr>" +
         "<tr><th>商户名称</th><td>" + esc(row.merchantName) + "</td><th>子业务</th><td>" + esc(biz) + "</td></tr>" +
-        "<tr><th>客户转账币种</th><td>" + esc(row.currency) + "</td><th>期望入账金额</th><td>" + esc(amount) + "</td></tr>" +
+        prechargeCustomerAmountRows(row) +
         prechargeAttachRow() +
         "</tbody></table>" +
         '<h3 class="section-title">客户预充额度信息</h3>' +
@@ -2660,7 +2776,7 @@
       const errors = {};
       if (fulfill && !dialog.group) errors.group = "请选择运营部业务组";
       if (!amount || !/^\d+(\.\d{1,2})?$/.test(amount) || Number(amount) <= 0) errors.amount = "请输入预充金额";
-      else if (fulfill && row.amount != null && Number(amount) > Number(row.amount)) errors.amount = "预充金额不可大于期望入账金额";
+      else if (fulfill && row.transferAmt != null && Number(amount) > Number(row.transferAmt)) errors.amount = "预充金额不可大于转账金额";
       if (!remark) errors.remark = fulfill ? "请填写预充申请事由" : "请输入备注信息";
       if (dialog.arrive && dialog.arrive < tomorrowValue()) errors.arrive = "预计到账时间只能选择今日之后的日期";
       if (fulfill && !(dialog.proofFiles || []).length) errors.proof = "请上传预充证明资料";

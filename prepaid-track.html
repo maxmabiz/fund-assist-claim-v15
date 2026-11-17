@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fund · 预充追踪</title>
+<style>
+  :root {
+    --primary: #1677ff;
+    --primary-hover: #4096ff;
+    --primary-active: #0958d9;
+    --text: rgba(0, 0, 0, .88);
+    --text-2: rgba(0, 0, 0, .65);
+    --text-3: rgba(0, 0, 0, .45);
+    --text-4: rgba(0, 0, 0, .25);
+    --border: #d9d9d9;
+    --split: #f0f0f0;
+    --bg: #f5f5f5;
+    --success: #52c41a;
+    --warning: #d48806;
+    --danger: #ff4d4f;
+    --header-h: 48px;
+    --tab-h: 40px;
+    --font: 13px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: var(--font);
+    color: var(--text);
+    background: #f0f2f5;
+    overflow: hidden;
+  }
+  button, input, select, textarea { font-family: inherit; font-size: inherit; }
+  button { cursor: pointer; }
+
+  .app { height: 100vh; display: flex; flex-direction: column; min-width: 1280px; }
+
+  .topbar {
+    height: var(--header-h);
+    background: #fff;
+    border-bottom: 1px solid var(--split);
+    display: flex;
+    align-items: center;
+    padding: 0 16px 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .logo {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--primary); color: #fff;
+    display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  }
+  .crumb {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-2);
+  }
+  .crumb .app-name { color: var(--text); font-weight: 600; }
+  .crumb .sep { color: var(--text-4); }
+  .crumb .current { color: var(--text); }
+  .top-spacer { flex: 1; }
+  .icon-btn {
+    width: 32px; height: 32px; border: 0; background: transparent;
+    border-radius: 6px; color: var(--text-2); display: grid; place-items: center;
+  }
+  .icon-btn:hover { background: rgba(0,0,0,.04); color: var(--text); }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: grid; place-items: center; font-weight: 500;
+  }
+
+  .tabbar {
+    height: var(--tab-h);
+    background: #fff;
+    border-bottom: 1px solid var(--split);
+    display: flex; align-items: flex-end;
+    padding: 0 12px; gap: 4px; flex-shrink: 0;
+  }
+  .tab {
+    height: 36px; display: flex; align-items: center; gap: 6px;
+    padding: 0 12px; color: var(--text-2);
+    border: 0; border-bottom: 2px solid transparent;
+    background: transparent; border-radius: 0;
+  }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tab .x { color: var(--text-4); font-size: 12px; line-height: 1; padding: 2px; }
+
+  .page {
+    flex: 1; min-height: 0; overflow: hidden;
+    padding: 12px 16px 8px; background: #fff;
+    display: flex; flex-direction: column;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 240px)) 1fr;
+    gap: 8px 16px;
+    align-items: end;
+    margin-bottom: 12px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field label { color: var(--text); line-height: 22px; }
+  .field input, .field select {
+    width: 100%; height: 32px;
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 0 11px; outline: none; background: #fff; color: var(--text);
+  }
+  .field input::placeholder { color: #bfbfbf; }
+  .field input:hover, .field select:hover { border-color: var(--primary-hover); }
+  .field input:focus, .field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(5, 145, 255, .1);
+  }
+  .filter-actions {
+    display: flex; justify-content: flex-end; gap: 8px; padding-bottom: 0;
+  }
+
+  .btn {
+    height: 32px; padding: 0 15px; border-radius: 6px;
+    border: 1px solid var(--border); background: #fff; color: var(--text);
+    display: inline-flex; align-items: center; line-height: 1;
+  }
+  .btn:hover { color: var(--primary-hover); border-color: var(--primary-hover); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .btn:disabled, .btn.primary:disabled {
+    color: rgba(0, 0, 0, .25); background: #f5f5f5; border-color: #d9d9d9;
+    cursor: not-allowed;
+  }
+  .btn.primary:disabled:hover {
+    color: rgba(0, 0, 0, .25); background: #f5f5f5; border-color: #d9d9d9;
+  }
+  .btn-link {
+    border: 0; background: transparent; color: var(--primary); padding: 0; cursor: pointer;
+  }
+  .btn-link:hover { color: var(--primary-hover); }
+
+  .table-wrap { flex: 1; min-height: 0; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 1680px; }
+  th, td {
+    padding: 12px 12px; text-align: left;
+    border-bottom: 1px solid var(--split); vertical-align: middle; font-weight: 400;
+  }
+  th {
+    background: #fafafa; color: var(--text); font-weight: 600; white-space: nowrap;
+    position: sticky; top: 0; z-index: 2;
+  }
+  td { color: var(--text); }
+  tbody tr:hover td { background: #fafafa; }
+  .name { max-width: 180px; white-space: normal; line-height: 1.45; word-break: break-all; }
+  .person { max-width: 168px; white-space: normal; line-height: 1.45; word-break: break-all; }
+  .reason { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .amt { color: var(--success); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--text-3); }
+  .col-sticky {
+    position: sticky; right: 0; background: #fff;
+    box-shadow: -8px 0 8px -8px rgba(0,0,0,.12);
+  }
+  th.col-sticky { background: #fafafa; z-index: 3; }
+  tbody tr:hover td.col-sticky { background: #fafafa; }
+
+  .tag {
+    display: inline-flex; align-items: center;
+    height: 22px; padding: 0 8px; border-radius: 4px;
+    font-size: 12px; line-height: 20px; border: 1px solid transparent; white-space: nowrap;
+  }
+  .tag-mid { color: var(--warning); background: #fffbe6; border-color: #ffe58f; }
+  .tag-high { color: #cf1322; background: #fff2f0; border-color: #ffccc7; }
+  .tag-blue { color: var(--primary); background: #e6f4ff; border-color: #91caff; }
+  .tag-green { color: #389e0d; background: #f6ffed; border-color: #b7eb8f; }
+  .tag-gray { color: var(--text-3); background: #fafafa; border-color: #d9d9d9; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+  .pager {
+    display: flex; align-items: center;
+    gap: 12px; padding: 12px 0 4px; color: var(--text-2); flex-shrink: 0;
+  }
+  .pager .total { color: var(--text-2); }
+  .pages { margin-left: auto; }
+  .page-size {
+    height: 32px; border: 1px solid var(--border); border-radius: 6px;
+    padding: 0 8px; background: #fff; color: var(--text);
+  }
+  .pages { display: flex; align-items: center; gap: 4px; }
+  .page-btn {
+    min-width: 32px; height: 32px; padding: 0 6px;
+    border: 1px solid transparent; background: transparent;
+    border-radius: 6px; color: var(--text);
+  }
+  .page-btn:hover { background: rgba(0,0,0,.04); }
+  .page-btn.on { border-color: var(--primary); color: var(--primary); font-weight: 600; }
+  .page-btn:disabled { color: var(--text-4); cursor: not-allowed; }
+
+  .mask {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 80px 16px 24px; z-index: 20;
+  }
+  .mask[hidden] { display: none; }
+  .modal {
+    width: 560px; max-width: calc(100vw - 48px);
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.08), 0 3px 6px -4px rgba(0,0,0,.12), 0 9px 28px 8px rgba(0,0,0,.05);
+    display: flex; flex-direction: column; max-height: calc(100vh - 120px);
+  }
+  .modal-hd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; border-bottom: 1px solid var(--split); flex-shrink: 0;
+  }
+  .modal-hd h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; }
+  .close {
+    width: 22px; height: 22px; border: 0; background: transparent;
+    color: var(--text-3); border-radius: 4px; display: grid; place-items: center; font-size: 16px;
+  }
+  .close:hover { background: rgba(0,0,0,.06); color: var(--text); }
+  .modal-bd { padding: 20px 24px 8px; overflow: auto; }
+  .sec-title { font-size: 14px; font-weight: 600; margin: 0 0 12px; }
+  .desc {
+    width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 20px; min-width: 0;
+  }
+  .desc th, .desc td {
+    border: 1px solid #f0f0f0; padding: 10px 12px; font-weight: 400;
+    word-break: break-all; background: #fff; white-space: normal; position: static;
+  }
+  .desc th {
+    width: 18%; background: #fafafa; color: var(--text-2); text-align: left;
+  }
+  .desc td { width: 32%; color: var(--text); }
+  .form-item { margin-bottom: 16px; }
+  .form-label { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; line-height: 22px; }
+  .req { color: var(--danger); font-family: SimSun, sans-serif; }
+  .seg {
+    display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  }
+  .seg button {
+    height: 32px; padding: 0 15px; border: 0; background: #fff; color: var(--text);
+    border-right: 1px solid var(--border);
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button.on { background: var(--primary); color: #fff; }
+  .settle-hint {
+    display: flex; align-items: flex-start; gap: 6px;
+    margin: 8px 0 0; padding: 8px 10px;
+    line-height: 1.65; color: var(--text);
+    background: #e6f4ff; border: 1px solid #91caff; border-radius: 6px;
+  }
+  .settle-hint svg { flex-shrink: 0; margin-top: 3px; color: #1677ff; }
+  .settle-hint.warn { background: #fff2f0; border-color: #ffccc7; }
+  .settle-hint.warn svg { color: #ff4d4f; }
+  .settle-hint[hidden] { display: none; }
+  .settle-order { margin-top: 12px; }
+  .settle-order[hidden] { display: none; }
+  .settle-order .form-label { margin-bottom: 8px; }
+  .desc.kv { margin-bottom: 0; }
+  .desc.kv th { width: 120px; }
+  .desc.kv td { width: auto; }
+  .copy-cell { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .copy-cell .mono { word-break: break-all; }
+  .textarea-wrap { position: relative; }
+  textarea {
+    width: 100%; height: 96px; padding: 8px 11px 24px;
+    border: 1px solid var(--border); border-radius: 6px;
+    outline: none; resize: vertical; line-height: 1.5715; color: var(--text);
+  }
+  textarea::placeholder { color: #bfbfbf; }
+  textarea:hover { border-color: var(--primary-hover); }
+  textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(5,145,255,.1); }
+  textarea.invalid { border-color: var(--danger); }
+  .count {
+    position: absolute; right: 10px; bottom: 6px;
+    font-size: 12px; color: var(--text-4); pointer-events: none;
+  }
+  .err { color: var(--danger); font-size: 12px; line-height: 20px; margin-top: 4px; }
+  .err:empty { display: none; }
+  .modal-ft {
+    display: flex; justify-content: flex-end; gap: 8px;
+    padding: 10px 16px; border-top: 1px solid var(--split); flex-shrink: 0;
+  }
+  .toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.12);
+    padding: 10px 16px; display: flex; align-items: center; gap: 8px;
+    z-index: 40; color: var(--text);
+  }
+  .toast[hidden] { display: none; }
+  .toast .ok { color: var(--success); font-weight: 700; }
+
+  html.embed .topbar,
+  html.embed .tabbar { display: none; }
+  html.embed body { background: #fff; }
+  html.embed .app { min-width: 0; height: 100%; }
+  html.embed .page { padding: 16px 20px 8px; }
+  .page-crumb {
+    color: var(--text-3); margin-bottom: 12px;
+  }
+  .page-crumb b { color: var(--text); font-weight: 500; }
+  html:not(.embed) .page-crumb { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="logo">F</div>
+    <div class="crumb">
+      <span class="app-name">fund</span>
+      <span class="sep">›</span>
+      <span>业务入账</span>
+      <span class="sep">›</span>
+      <span class="current">预充追踪</span>
+    </div>
+    <div class="top-spacer"></div>
+    <button class="icon-btn" type="button" title="搜索">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    </button>
+    <button class="icon-btn" type="button" title="帮助">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 2.5-3 4"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg>
+    </button>
+    <button class="icon-btn" type="button" title="主题">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 14.5A8.5 8.5 0 1111.5 3 7 7 0 0021 14.5z"/></svg>
+    </button>
+    <div class="avatar">周</div>
+  </header>
+
+  <nav class="tabbar">
+    <button class="tab" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      工作台
+    </button>
+    <button class="tab active" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+      预充追踪
+      <span class="x">×</span>
+    </button>
+  </nav>
+
+  <main class="page">
+    <div class="page-crumb">Fund &nbsp;&gt;&nbsp; 业务入账 &nbsp;&gt;&nbsp; <b>预充追踪</b></div>
+    <div class="filters">
+      <div class="field">
+        <label>商户ID</label>
+        <input id="qId" placeholder="请输入商户ID" />
+      </div>
+      <div class="field">
+        <label>商户名称</label>
+        <input id="qName" placeholder="请输入商户名称" />
+      </div>
+      <div class="field">
+        <label>子业务线</label>
+        <select id="qLine">
+          <option value="">请选择子业务线</option>
+          <option>履约</option>
+          <option>广告</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>风险等级</label>
+        <select id="qRisk">
+          <option value="">请选择风险等级</option>
+          <option>中等</option>
+          <option>严重</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn primary" type="button" id="btnSearch">搜索</button>
+        <button class="btn" type="button" id="btnReset">重置</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>商户名称</th>
+            <th>子业务线</th>
+            <th>提交转账审核人员</th>
+            <th>提交转账审核时间</th>
+            <th>预充申请人</th>
+            <th>预充币种</th>
+            <th>预充金额</th>
+            <th>风险等级</th>
+            <th>风险说明</th>
+            <th>转账审核滞留天数</th>
+            <th>最后跟进人</th>
+            <th>最后跟进时间</th>
+            <th>跟进结果</th>
+            <th class="col-sticky">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span class="total" id="totalText">共 0 条记录</span>
+      <select class="page-size" id="pageSize">
+        <option value="20" selected>20条/页</option>
+        <option value="50">50条/页</option>
+      </select>
+      <div class="pages" id="pages"></div>
+    </div>
+  </main>
+</div>
+
+<div class="mask" id="mask" hidden>
+  <div class="modal" role="dialog" aria-labelledby="dlgTitle">
+    <div class="modal-hd">
+      <h2 id="dlgTitle">跟进记录</h2>
+      <button class="close" type="button" id="btnClose" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-bd">
+      <p class="sec-title">预充信息</p>
+      <table class="desc">
+        <tr>
+          <th>商户ID</th>
+          <td id="dId"></td>
+          <th>商户名称</th>
+          <td id="dName"></td>
+        </tr>
+        <tr>
+          <th>预充币种</th>
+          <td id="dCcy"></td>
+          <th>预充金额</th>
+          <td id="dAmt" class="amt"></td>
+        </tr>
+        <tr>
+          <th>风险等级</th>
+          <td id="dRisk"></td>
+          <th>滞留天数</th>
+          <td id="dDays"></td>
+        </tr>
+      </table>
+      <p class="sec-title">跟进信息</p>
+      <div class="form-item">
+        <div class="form-label"><span class="req">*</span>跟进结果</div>
+        <div class="seg" id="seg">
+          <button type="button" data-tag="跟进中">跟进中</button>
+          <button type="button" data-tag="坏账">坏账</button>
+          <button type="button" data-tag="已结清">已结清</button>
+        </div>
+        <p class="settle-hint" id="settleHint" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 00-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 001 1h6a1 1 0 001-1v-2.26C17.81 13.47 19 11.38 19 9a7 7 0 00-7-7zm-3 19a1 1 0 001 1h4a1 1 0 001-1v-1H9v1z"/></svg>
+          <span id="settleHintText"></span>
+        </p>
+        <div class="settle-order" id="settleOrder" hidden>
+          <div class="form-label">对应转账审核单</div>
+          <div id="settleOrderTable"></div>
+        </div>
+      </div>
+      <div class="form-item">
+        <div class="form-label"><span class="req">*</span>跟进备注</div>
+        <div class="textarea-wrap">
+          <textarea id="remark" maxlength="1000" placeholder="请输入跟进备注（最多1000字）"></textarea>
+          <span class="count" id="count">0 / 1000</span>
+        </div>
+        <div class="err" id="remarkErr"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" type="button" id="btnCancel">取消</button>
+      <button class="btn primary" type="button" id="btnSave">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden><span class="ok">✓</span><span id="toastText">已更新</span></div>
+
+<script>
+if (new URLSearchParams(location.search).has("embed")) {
+  document.documentElement.classList.add("embed");
+}
+
+const LONG = "LLYYYYYYYYYYYY请不要随便动别人账号信息谢谢配合";
+const REASON_MID = "客户转账申请尚未匹配，请尽快匹配";
+const REASON_HIGH = "客户转账审核驳回，并且无法回收预充金额";
+const PEOPLE = [
+  ["陈晓", "chenxiao@example.com"],
+  ["王磊", "wanglei@example.com"],
+  ["林雨", "linyu@example.com"],
+  ["赵倩", "zhaoqian@example.com"],
+  ["周宁", "zhouning@example.com"]
+];
+
+const SEED = [
+  { id: "13492", name: LONG, line: "履约", staff: PEOPLE[0], time: "2026-11-04 21:30:22", ccy: "AUD", amt: "112.00", risk: "中等", reason: REASON_MID, days: 5, tag: "跟进中" },
+  { id: "13492", name: LONG, line: "履约", staff: PEOPLE[1], time: "2026-10-13 16:33:31", ccy: "EUR", amt: "12.00", risk: "中等", reason: REASON_MID, days: 27, tag: "跟进中" },
+  { id: "1787045423", name: "测试用户_1787045423", line: "广告", staff: PEOPLE[2], time: "2026-10-12 14:25:08", ccy: "USD", amt: "1.00", risk: "中等", reason: REASON_MID, days: 28, tag: "跟进中" },
+  { id: "13492", name: LONG, line: "履约", staff: PEOPLE[2], time: "2026-10-10 18:37:55", ccy: "EUR", amt: "9.66", risk: "中等", reason: REASON_MID, days: 30, tag: "跟进中" },
+  { id: "13492", name: LONG, line: "履约", staff: PEOPLE[3], time: "2026-09-29 14:51:24", ccy: "EUR", amt: "8643.38", risk: "中等", reason: REASON_MID, days: 41, tag: "跟进中" },
+  { id: "1230", name: "产品验收-测试环境1230", line: "广告", staff: PEOPLE[2], time: "2026-09-29 15:12:36", ccy: "USD", amt: "1000.00", risk: "严重", reason: REASON_HIGH, days: 41, tag: "坏账" },
+  { id: "13492", name: LONG, line: "履约", staff: PEOPLE[3], time: "2026-09-29 14:51:24", ccy: "EUR", amt: "8643.39", risk: "严重", reason: REASON_HIGH, days: 41, tag: "坏账" },
+  { id: "13492", name: LONG, line: "履约", staff: PEOPLE[2], time: "2026-09-23 13:26:10", ccy: "EUR", amt: "86.43", risk: "中等", reason: REASON_MID, days: 47, tag: "跟进中" },
+  { id: "13492", name: LONG, line: "履约", staff: PEOPLE[2], time: "2026-09-23 03:56:40", ccy: "EUR", amt: "86.43", risk: "中等", reason: REASON_MID, days: 48, tag: "跟进中" },
+  { id: "13492", name: LONG, line: "履约", staff: PEOPLE[2], time: "2026-09-23 03:56:40", ccy: "EUR", amt: "86.43", risk: "严重", reason: REASON_HIGH, days: 47, tag: "坏账", last: ["吴桐", "wutong@example.com"], lastTime: "2026-09-23 13:17:56" },
+  { id: "22011", name: LONG, line: "广告", staff: PEOPLE[1], time: "2026-09-18 18:19:28", ccy: "USD", amt: "100.00", risk: "中等", reason: REASON_MID, days: 52, tag: "跟进中" },
+  { id: "22011", name: LONG, line: "广告", staff: PEOPLE[1], time: "2026-09-18 18:19:28", ccy: "USD", amt: "100.00", risk: "严重", reason: REASON_HIGH, days: 52, tag: "坏账" },
+  { id: "90001", name: "履约测试商户A", line: "履约", staff: PEOPLE[4], time: "2026-09-05 16:19:04", ccy: "EUR", amt: "257.86", risk: "中等", reason: REASON_MID, days: 65, tag: "跟进中" },
+  { id: "90001", name: "履约测试商户A", line: "履约", staff: PEOPLE[4], time: "2026-09-05 14:46:18", ccy: "EUR", amt: "8.59", risk: "中等", reason: REASON_MID, days: 65, tag: "跟进中" },
+  { id: "7788", name: "履约测试商户B", line: "履约", staff: PEOPLE[4], time: "2026-09-19 10:35:23", ccy: "USD", amt: "10.00", risk: "中等", reason: REASON_MID, days: 82, tag: "跟进中" },
+  { id: "1787045423", name: "测试用户_1787045423", line: "广告", staff: PEOPLE[2], time: "2026-09-19 11:10:00", ccy: "USD", amt: "100.00", risk: "中等", reason: REASON_MID, days: 83, tag: "跟进中" }
+];
+
+const EXTRA_NAMES = ["万里汇测试商户", "华贸国际", "迅达物流", "测试用户_99001", "验收商户-A12"];
+const PLATFORMS = ["Airwallex", "Payoneer", "Wise", "Worldfirst"];
+
+function matchStatusFor(i, tag) {
+  if (i === 2 || i === 13 || i === 15) return "已匹配";
+  if (tag === "坏账") return i % 2 ? "已撤销" : "退回并作废";
+  if (i % 11 === 0 && i > 0) return "已匹配";
+  return "待匹配";
+}
+
+function attachOrder(r, i) {
+  r.order = {
+    reviewNo: "3544147621890" + String(40029 + i * 17).padStart(5, "0"),
+    platform: PLATFORMS[i % PLATFORMS.length],
+    txnId: "TXN" + String(86012000 + i * 37),
+    transferDate: (r.time || "").slice(0, 10),
+    matchStatus: matchStatusFor(i, r.tag)
+  };
+  return r;
+}
+
+const rows = SEED.map((r, i) => attachOrder({ ...r, key: i, last: r.last || null, lastTime: r.lastTime || "", remark: r.remark || "" }, i));
+while (rows.length < 66) {
+  const p = PEOPLE[rows.length % PEOPLE.length];
+  const i = rows.length;
+  const tag = i % 7 === 0 ? "坏账" : "跟进中";
+  rows.push(attachOrder({
+    key: i,
+    id: String(20000 + i),
+    name: EXTRA_NAMES[i % EXTRA_NAMES.length],
+    line: i % 3 === 0 ? "广告" : "履约",
+    staff: p,
+    time: "2026-08-" + String(10 + (i % 18)).padStart(2, "0") + " 11:20:00",
+    ccy: ["USD", "EUR", "AUD"][i % 3],
+    amt: (10 + i).toFixed(2),
+    risk: i % 5 === 0 ? "严重" : "中等",
+    reason: i % 5 === 0 ? REASON_HIGH : REASON_MID,
+    days: 20 + (i % 60),
+    tag,
+    last: null,
+    lastTime: "",
+    remark: ""
+  }, i));
+}
+
+const state = { page: 1, size: 20, filtered: rows.slice(), editKey: null, tag: "跟进中" };
+
+function person(p) { return p ? p[0] + "(" + p[1] + ")" : "-"; }
+function riskTag(risk) {
+  return '<span class="tag ' + (risk === "严重" ? "tag-high" : "tag-mid") + '">' + risk + "</span>";
+}
+
+function applyFilter() {
+  const id = document.getElementById("qId").value.trim();
+  const name = document.getElementById("qName").value.trim();
+  const line = document.getElementById("qLine").value;
+  const risk = document.getElementById("qRisk").value;
+  state.filtered = rows.filter((r) =>
+    (!id || r.id.includes(id)) &&
+    (!name || r.name.includes(name)) &&
+    (!line || r.line === line) &&
+    (!risk || r.risk === risk)
+  );
+  state.page = 1;
+  render();
+}
+
+function render() {
+  const { page, size, filtered } = state;
+  const total = filtered.length;
+  const start = (page - 1) * size;
+  const pageRows = filtered.slice(start, start + size);
+  document.getElementById("tbody").innerHTML = pageRows.map((r) => `
+    <tr>
+      <td class="name">${r.name}</td>
+      <td>${r.line}</td>
+      <td class="person">${person(r.staff)}</td>
+      <td>${r.time}</td>
+      <td class="person">${person(r.staff)}</td>
+      <td>${r.ccy}</td>
+      <td class="amt">${r.amt}</td>
+      <td>${riskTag(r.risk)}</td>
+      <td class="reason" title="${r.reason}">${r.reason}</td>
+      <td>${r.days}</td>
+      <td class="person">${r.last ? person(r.last) : "-"}</td>
+      <td>${r.lastTime || "-"}</td>
+      <td>${r.tag}</td>
+      <td class="col-sticky"><button class="btn-link" type="button" data-follow="${r.key}">跟进</button></td>
+    </tr>
+  `).join("");
+  document.getElementById("totalText").textContent = "共 " + total + " 条记录";
+  const pages = Math.max(1, Math.ceil(total / size));
+  let html = '<button class="page-btn" type="button" data-page="prev" ' + (page <= 1 ? "disabled" : "") + ">‹</button>";
+  for (let i = 1; i <= pages && i <= 7; i++) {
+    html += '<button class="page-btn' + (i === page ? " on" : "") + '" type="button" data-page="' + i + '">' + i + "</button>";
+  }
+  html += '<button class="page-btn" type="button" data-page="next" ' + (page >= pages ? "disabled" : "") + ">›</button>";
+  document.getElementById("pages").innerHTML = html;
+}
+
+function openFollow(key) {
+  const r = rows.find((x) => x.key === key);
+  if (!r) return;
+  state.editKey = key;
+  state.tag = r.tag || "跟进中";
+  document.getElementById("dId").textContent = r.id;
+  document.getElementById("dName").textContent = r.name;
+  document.getElementById("dCcy").textContent = r.ccy;
+  document.getElementById("dAmt").textContent = r.amt;
+  document.getElementById("dRisk").innerHTML = riskTag(r.risk);
+  document.getElementById("dDays").textContent = r.days;
+  document.getElementById("remark").value = r.remark || "";
+  document.getElementById("remark").classList.remove("invalid");
+  document.getElementById("remarkErr").textContent = "";
+  document.getElementById("count").textContent = (r.remark || "").length + " / 1000";
+  syncSeg();
+  document.getElementById("mask").hidden = false;
+}
+
+function canSettle(r) {
+  return r && r.order && r.order.matchStatus === "已匹配";
+}
+
+function syncOkBtn() {
+  const r = rows.find((x) => x.key === state.editKey);
+  const blocked = state.tag === "已结清" && !canSettle(r);
+  const ok = document.getElementById("btnSave");
+  ok.disabled = blocked;
+  ok.title = blocked ? "转账审核单未匹配，无法标记已结清" : "";
+}
+
+function syncSeg() {
+  document.querySelectorAll("#seg button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.tag === state.tag);
+  });
+  const hint = document.getElementById("settleHint");
+  const hintText = document.getElementById("settleHintText");
+  const orderBox = document.getElementById("settleOrder");
+  const orderTable = document.getElementById("settleOrderTable");
+  const r = rows.find((x) => x.key === state.editKey);
+  if (state.tag !== "已结清") {
+    hint.hidden = true;
+    hintText.textContent = "";
+    hint.classList.remove("warn");
+    orderBox.hidden = true;
+    orderTable.innerHTML = "";
+    syncOkBtn();
+    return;
+  }
+  hint.hidden = false;
+  orderBox.hidden = false;
+  orderTable.innerHTML = r && r.order ? orderTableHtml(r.order) : "";
+  if (canSettle(r)) {
+    hint.classList.remove("warn");
+    hintText.textContent = "标记已结清要求对应转账审核单为「已匹配」。请核对下方对应转账审核单。";
+  } else {
+    hint.classList.add("warn");
+    const status = (r && r.order && r.order.matchStatus) || "待匹配";
+    hintText.textContent = "对应转账审核单当前为「" + status + "」，无法标记已结清，请先完成流水匹配。";
+  }
+  syncOkBtn();
+}
+
+function closeDlg() { document.getElementById("mask").hidden = true; }
+
+function matchTag(status) {
+  if (status === "已匹配") return '<span class="tag tag-green">已匹配</span>';
+  if (status === "待匹配") return '<span class="tag tag-blue">待匹配</span>';
+  return '<span class="tag tag-gray">' + status + "</span>";
+}
+
+function orderTableHtml(order) {
+  return `
+    <table class="desc kv">
+      <tr>
+        <th>转账审核单号</th>
+        <td>
+          <span class="copy-cell">
+            <span class="mono">${order.reviewNo}</span>
+            <button type="button" class="btn-link" data-copy="${order.reviewNo}">复制</button>
+          </span>
+        </td>
+      </tr>
+      <tr><th>转账平台</th><td>${order.platform}</td></tr>
+      <tr><th>交易ID</th><td class="mono">${order.txnId}</td></tr>
+      <tr><th>转账日期</th><td>${order.transferDate || "-"}</td></tr>
+      <tr><th>匹配状态</th><td>${matchTag(order.matchStatus)}</td></tr>
+    </table>`;
+}
+
+function showToast(text) {
+  document.getElementById("toastText").textContent = text;
+  const toast = document.getElementById("toast");
+  toast.hidden = false;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => { toast.hidden = true; }, 1800);
+}
+
+function copyReviewNo(text, btn) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  ta.remove();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(function () {});
+  }
+  btn.textContent = "已复制";
+  showToast("已复制转账审核单号");
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => { btn.textContent = "复制"; }, 1600);
+}
+
+function requestSave() {
+  const ok = document.getElementById("btnSave");
+  if (ok.disabled) return;
+  const remark = document.getElementById("remark").value.trim();
+  if (!remark) {
+    document.getElementById("remark").classList.add("invalid");
+    document.getElementById("remarkErr").textContent = "请输入跟进备注";
+    return;
+  }
+  const r = rows.find((x) => x.key === state.editKey);
+  if (!r) return;
+  if (state.tag === "已结清" && !canSettle(r)) return;
+  r.tag = state.tag;
+  r.remark = remark;
+  r.last = ["演示账号", "demo.user@example.com"];
+  const now = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  r.lastTime = now.getFullYear() + "-" + p(now.getMonth() + 1) + "-" + p(now.getDate()) + " " + p(now.getHours()) + ":" + p(now.getMinutes()) + ":" + p(now.getSeconds());
+  closeDlg();
+  render();
+  showToast(state.tag === "已结清" ? "已标记已结清" : "已更新");
+}
+
+document.getElementById("btnSearch").onclick = applyFilter;
+document.getElementById("btnReset").onclick = () => {
+  document.getElementById("qId").value = "";
+  document.getElementById("qName").value = "";
+  document.getElementById("qLine").value = "";
+  document.getElementById("qRisk").value = "";
+  applyFilter();
+};
+document.getElementById("pageSize").onchange = (e) => {
+  state.size = Number(e.target.value);
+  state.page = 1;
+  render();
+};
+document.getElementById("pages").onclick = (e) => {
+  const btn = e.target.closest("[data-page]");
+  if (!btn || btn.disabled) return;
+  const pages = Math.max(1, Math.ceil(state.filtered.length / state.size));
+  if (btn.dataset.page === "prev") state.page = Math.max(1, state.page - 1);
+  else if (btn.dataset.page === "next") state.page = Math.min(pages, state.page + 1);
+  else state.page = Number(btn.dataset.page);
+  render();
+};
+document.getElementById("tbody").onclick = (e) => {
+  const btn = e.target.closest("[data-follow]");
+  if (btn) openFollow(Number(btn.dataset.follow));
+};
+document.getElementById("btnClose").onclick = closeDlg;
+document.getElementById("btnCancel").onclick = closeDlg;
+document.getElementById("mask").addEventListener("click", (e) => {
+  if (e.target.id === "mask") closeDlg();
+});
+document.getElementById("seg").onclick = (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  state.tag = btn.dataset.tag;
+  syncSeg();
+};
+document.getElementById("remark").addEventListener("input", (e) => {
+  document.getElementById("count").textContent = e.target.value.length + " / 1000";
+  if (e.target.value.trim()) {
+    e.target.classList.remove("invalid");
+    document.getElementById("remarkErr").textContent = "";
+  }
+});
+document.getElementById("btnSave").onclick = requestSave;
+document.getElementById("settleOrderTable").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-copy]");
+  if (!btn) return;
+  copyReviewNo(btn.dataset.copy, btn);
+});
+
+render();
+</script>
+</body>
+</html>
