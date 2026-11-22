@@ -515,13 +515,43 @@
     .order-q { display: flex; gap: 8px; align-items: center; }
     .order-q input { flex: 1; min-width: 0; }
     .order-q .btn { flex-shrink: 0; }
-    .order-wrap { max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .order-wrap { max-height: 240px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .order-wrap.has-pick { max-height: 168px; }
     .order-table { width: 100%; min-width: 720px; }
     .order-table th, .order-table td { padding: 8px 10px; white-space: nowrap; }
     .order-table th { background: #fafafa; }
     .order-table tr.disabled { color: var(--text-2); }
     .kv-mini { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center; }
     .kv-mini .k { color: var(--text-2); }
+    .claim-picked {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 32px;
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .claim-picked .k { color: var(--text-2); margin-bottom: 4px; }
+    .claim-picked .v { line-height: 22px; min-width: 0; word-break: break-all; }
+    .claim-picked .v.amt { font-weight: 600; }
+    .claim-picked .ccy-edit-row { min-height: 22px; gap: 8px; }
+    .claim-inline-fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 28px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    .claim-inline-fields .pair {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 22px;
+    }
+    .claim-inline-fields .k { color: var(--text-2); white-space: nowrap; }
+    .claim-inline-fields .ccy-edit-row { min-height: 22px; gap: 8px; }
     .confirm-box { display: grid; gap: 12px; }
     .confirm-sec { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: #fafafa; }
     .confirm-sec-h { font-weight: 600; margin: 0 0 8px; }
@@ -615,10 +645,11 @@
     }
 
     .toast {
-      position: fixed; top: 72px; left: calc(50% + 130px); transform: translateX(-50%);
+      position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
       font-size: var(--font);
       background: rgba(0,0,0,.75); color: #fff; padding: 10px 16px; border-radius: 6px;
-      opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 80;
+      opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 90;
+      text-align: center; white-space: nowrap;
     }
     .toast.show { opacity: 1; }
 
@@ -958,7 +989,7 @@ function emptyClaimDraft() {
     voucherName: "",
     step: 1, hasOrder: "",
     orderQ: "", orderId: "",
-    line: "", merchantId: "", useRec: false, expectAmt: "", xferCcy: "", editCcy: false,
+    line: "", merchantId: "", useRec: false, expectAmt: "", infoExpectAmt: "", expectDirty: false, xferCcy: "", editCcy: false,
     paidAmt: "", feeOn: null, fxOn: null, creditAmt: "", creditDirty: false
   };
 }
@@ -994,7 +1025,7 @@ function makeSceneTxn(s) {
     id: "sc-" + s.code.toLowerCase(),
     platform: "Airwallex",
     alias: "scene-demo",
-    entity: "场景演示",
+    entity: "场景演示-" + (s.label || s.scene),
     type: "-",
     subType: "-",
     txnNo: "SC-" + s.code,
@@ -1020,18 +1051,18 @@ function makeSceneTxn(s) {
   };
 }
 const SCENE_CASES = [
-  { code: "EQ-USD", time: "2026-11-09 09:01:00", amount: 1000, merchantId: "14229", expect: 1000, scene: "等额同币种，无补足，点确认即可入账", conf: 96, payer: "STARLINK SCENE USD" },
-  { code: "EQ-FX", time: "2026-11-09 09:02:00", amount: 1430, merchantId: "3639", expect: 1430, scene: "等额跨币种，第3步入账确认，可试汇损 1% 上限", conf: 92, payer: "HANGZHOU RETAIL SCENE" },
-  { code: "FEE", time: "2026-11-09 09:03:00", amount: 1400, merchantId: "71008", expect: 1450, scene: "期望高于流水，手续费补足 50（未超 4%）", conf: 90, payer: "HUAMAO SCENE FEE" },
-  { code: "FEE-OFF", time: "2026-11-09 09:04:00", amount: 300, merchantId: "14229", expect: 326.4, scene: "期望高于流水，商户不支持补足，按流水入账", conf: 88, payer: "STARLINK SCENE NOFEE" },
-  { code: "FEE-CAP", time: "2026-11-09 09:05:00", amount: 50, merchantId: "71008", expect: 80, scene: "手续费差额超流水 4%，应被拦住", conf: 85, payer: "HUAMAO SCENE CAP" },
-  { code: "LOW", time: "2026-11-09 09:06:00", amount: 1860, merchantId: "3639", expect: 1430, scene: "期望低于流水，仍按流水全额入账", conf: 91, payer: "HANGZHOU RETAIL LOW" },
-  { code: "CCY", time: "2026-11-09 09:07:00", amount: 326.4, currency: "EUR", merchantId: "14229", expect: 326.4, orderCcy: "USD", scene: "审核单 USD、流水 EUR，应返回换单/换流水", conf: 80, payer: "EURO SCENE BUYER" },
-  { code: "FX-CAP", time: "2026-11-09 09:08:00", amount: 2000, merchantId: "88021", expect: 2000, scene: "仅汇损补足。把最终入账调高可试 1% 上限", conf: 89, payer: "XUNDA SCENE FX" },
-  { code: "DUP", time: "2026-11-09 09:09:00", amount: 450, merchantId: "88021", expect: 450, scene: "未创建会撞上已有待匹配单，可关联或继续认领", conf: 94, payer: "XUNDA SCENE DUP" },
-  { code: "LINE", time: "2026-11-09 09:10:00", amount: 800, merchantId: "71008", expect: 800, scene: "推荐履约商户。改业务线为广告可看不一致提示", conf: 93, payer: "HUAMAO SCENE LINE" },
-  { code: "REC-LOW", time: "2026-11-09 09:11:00", amount: 500, merchantId: "14229", expect: 500, scene: "推荐 55%，低于阈值，不预填", conf: 55, payer: "STARLINK SCENE LOWREC" },
-  { code: "NOREC", time: "2026-11-09 09:12:00", amount: 700, merchantId: "22617", expect: 700, scene: "无推荐，需手工选商户和业务线", noRec: true, payer: "YUANHANG SCENE NOREC" }
+  { code: "EQ-USD", time: "2026-11-09 09:01:00", amount: 1000, merchantId: "14229", expect: 1000, label: "等额同币种无补足", scene: "等额同币种，无补足，点确认即可入账", conf: 96, payer: "STARLINK SCENE USD" },
+  { code: "EQ-FX", time: "2026-11-09 09:02:00", amount: 1430, merchantId: "3639", expect: 1430, label: "等额跨币种可试汇损", scene: "等额跨币种，第3步入账确认，可试汇损 1% 上限", conf: 92, payer: "HANGZHOU RETAIL SCENE" },
+  { code: "FEE", time: "2026-11-09 09:03:00", amount: 1400, merchantId: "71008", expect: 1450, label: "期望高于流水可手续费补足", scene: "期望高于流水，手续费补足 50（未超 4%）", conf: 90, payer: "HUAMAO SCENE FEE" },
+  { code: "FEE-OFF", time: "2026-11-09 09:04:00", amount: 300, merchantId: "14229", expect: 326.4, label: "不支持手续费补足须改低期望", scene: "期望高于流水，商户不支持补足，须改期望后才能认领", conf: 88, payer: "STARLINK SCENE NOFEE" },
+  { code: "FEE-CAP", time: "2026-11-09 09:05:00", amount: 50, merchantId: "71008", expect: 80, label: "手续费补足超4%上限", scene: "手续费差额超流水 4%，应被拦住", conf: 85, payer: "HUAMAO SCENE CAP" },
+  { code: "LOW", time: "2026-11-09 09:06:00", amount: 1860, merchantId: "3639", expect: 1430, label: "期望低于流水须改高期望", scene: "期望低于流水，须改到不低于流水后才能认领", conf: 91, payer: "HANGZHOU RETAIL LOW" },
+  { code: "CCY", time: "2026-11-09 09:07:00", amount: 326.4, currency: "EUR", merchantId: "14229", expect: 326.4, orderCcy: "USD", label: "已创建审核单币种不一致", scene: "审核单 USD、流水 EUR，应返回换单/换流水", conf: 80, payer: "EURO SCENE BUYER" },
+  { code: "FX-CAP", time: "2026-11-09 09:08:00", amount: 2000, merchantId: "88021", expect: 2000, label: "跨币种仅可试汇损补足", scene: "仅汇损补足。把最终入账调高可试 1% 上限", conf: 89, payer: "XUNDA SCENE FX" },
+  { code: "DUP", time: "2026-11-09 09:09:00", amount: 450, merchantId: "88021", expect: 450, label: "未创建会撞待匹配单", scene: "未创建会撞上已有待匹配单，可关联或继续认领", conf: 94, payer: "XUNDA SCENE DUP" },
+  { code: "LINE", time: "2026-11-09 09:10:00", amount: 800, merchantId: "71008", expect: 800, label: "改业务线可看商户不一致", scene: "推荐履约商户。改业务线为广告可看不一致提示", conf: 93, payer: "HUAMAO SCENE LINE" },
+  { code: "REC-LOW", time: "2026-11-09 09:11:00", amount: 500, merchantId: "14229", expect: 500, label: "推荐低于阈值不预填", scene: "推荐 55%，低于阈值，不预填", conf: 55, payer: "STARLINK SCENE LOWREC" },
+  { code: "NOREC", time: "2026-11-09 09:12:00", amount: 700, merchantId: "22617", expect: 700, label: "无推荐须手工认领", scene: "无推荐，需手工选商户和业务线", noRec: true, payer: "YUANHANG SCENE NOREC" }
 ];
 const CLAIM_ORDERS = [
   ...SCENE_CASES.map(makeSceneOrder),
@@ -1502,6 +1533,7 @@ function applyIncomingLock(txn, payload) {
     if (payload.creditAmt != null) t.creditAmt = payload.creditAmt;
     if (payload.companyFee != null) t.companyFee = payload.companyFee;
     if (payload.fxLoss != null) t.fxLoss = payload.fxLoss;
+    if (payload.fxGain != null) t.fxGain = payload.fxGain;
     if (payload.bizLine) t.bizLine = payload.bizLine;
   }
 }
@@ -1516,6 +1548,7 @@ function applyIncomingUnlock(txn) {
   t.bizLine = "";
   t.companyFee = 0;
   t.fxLoss = 0;
+  t.fxGain = 0;
   t.creditAmt = null;
   t.accountCcy = "";
 }
@@ -1640,7 +1673,11 @@ function csvCell(v) {
 }
 function filterBizRows() {
   return txns.filter(t => t.platform === bizPlatform).filter(t => {
-    if (bizTxnFilter && String(t.txnNo).toLowerCase().indexOf(bizTxnFilter.toLowerCase()) < 0) return false;
+    if (bizTxnFilter) {
+      const q = bizTxnFilter.toLowerCase();
+      const hit = [t.txnNo, t.entity].some(v => String(v || "").toLowerCase().indexOf(q) >= 0);
+      if (!hit) return false;
+    }
     if (bizStatusFilter !== "all" && t.status !== bizStatusFilter) return false;
     if (bizRecLineFilter !== "all" && (!t.rec || t.rec.bizLine !== bizRecLineFilter)) return false;
     if (bizRecMerchantFilter && (!t.rec || t.rec.merchantId !== bizRecMerchantFilter)) return false;
@@ -1689,7 +1726,7 @@ function renderBiz() {
         <select><option>账户别名</option><option>airwallex-muxue-real</option></select>
         <select><option>主体名称</option><option>666</option></select>
         <input value="2026-04-01 ~ 2026-08-31" style="min-width:220px" />
-        <input id="bizTxnInput" placeholder="交易ID，场景搜 SC-" value="${bizTxnFilter.replace(/"/g, "&quot;")}" />
+        <input id="bizTxnInput" placeholder="交易ID / 场景名，搜 SC- 或手续费" value="${bizTxnFilter.replace(/"/g, "&quot;")}" />
         <div class="amount-pair">
           <input placeholder="最小金额" />
           <span>-</span>
@@ -1824,7 +1861,7 @@ function renderBiz() {
 }
 
 function renderAudit() {
-  $("app").innerHTML = '<iframe class="audit-frame" src="transfer-review.html?v=v166" title="转账审核"></iframe>';
+  $("app").innerHTML = '<iframe class="audit-frame" src="transfer-review.html?v=v171" title="转账审核"></iframe>';
 }
 
 function renderTrack() {
@@ -2163,9 +2200,15 @@ function renderMerchantList(q) {
 }
 function pickMerchant(id) {
   const m = merchantById(id);
-  if ($("fMerchant")) $("fMerchant").value = m ? m.id : "";
+  const nextId = m ? m.id : "";
+  if (claimDraft.merchantId && claimDraft.merchantId !== nextId) {
+    claimDraft.orderId = "";
+    claimDraft.orderQ = "";
+    if (claimDraft.hasOrder === "yes") claimDraft.voucherName = "";
+  }
+  if ($("fMerchant")) $("fMerchant").value = nextId;
   if ($("fMerchantQ")) $("fMerchantQ").value = m ? merchantLabel(m) : "";
-  claimDraft.merchantId = m ? m.id : "";
+  claimDraft.merchantId = nextId;
   claimDraft.creditDirty = false;
   claimDraft.creditAmt = "";
   claimDraft.fxOn = null;
@@ -2239,19 +2282,41 @@ function selectedClaimOrder() {
   return CLAIM_ORDERS.find(o => o.id === claimDraft.orderId);
 }
 function clearClaimLinkedOrder() {
+  unlinkClaimOrder(txns.find(x => x.id === activeId));
+}
+function unlinkClaimOrder(t) {
   claimDraft.orderId = "";
   claimDraft.orderQ = "";
-  claimDraft.line = "";
-  claimDraft.merchantId = "";
   claimDraft.voucherName = "";
-  claimDraft.expectAmt = "";
-  claimDraft.xferCcy = "";
+  if (claimDraft.infoExpectAmt) claimDraft.expectAmt = claimDraft.infoExpectAmt;
+  else if (t) claimDraft.expectAmt = Number(t.amount).toFixed(2);
+  if (t) claimDraft.xferCcy = t.currency;
   claimDraft.editCcy = false;
-  claimDraft.paidAmt = "";
-  claimDraft.feeOn = null;
-  claimDraft.fxOn = null;
-  claimDraft.creditAmt = "";
-  claimDraft.creditDirty = false;
+  claimDraft.expectDirty = false;
+}
+function findClaimOrderByNo(q) {
+  const typed = (q || "").trim();
+  if (!typed) return null;
+  return CLAIM_ORDERS.find(o => o.reviewNo === typed || o.id === typed) || null;
+}
+function claimOrderSelectable(o, t) {
+  if (!o || o.status !== "待匹配") return false;
+  if (claimDraft.merchantId && o.merchantId !== claimDraft.merchantId) return false;
+  if (t && o.currency && t.currency && o.currency !== t.currency) return false;
+  return true;
+}
+function applyLinkedOrder(t, order) {
+  if (!order) return;
+  const same = claimDraft.orderId === order.id;
+  claimDraft.orderId = order.id;
+  claimDraft.voucherName = order.voucher || "";
+  if (!same || !claimDraft.expectDirty) {
+    claimDraft.expectAmt = order.amount == null
+      ? (claimDraft.infoExpectAmt || "")
+      : Number(order.amount).toFixed(2);
+    claimDraft.expectDirty = false;
+  }
+  claimDraft.xferCcy = order.currency || (t ? t.currency : "");
 }
 function claimCcyList(t) {
   return CLAIM_CCYS.includes(t.currency) ? CLAIM_CCYS : [t.currency, ...CLAIM_CCYS];
@@ -2280,7 +2345,7 @@ function claimCcyMismatch(t) {
 function claimCcyHintHtml(t) {
   if (!claimCcyMismatch(t)) return `<div id="ccyGateHint" hidden></div>`;
   const ccy = claimXferCcy(t);
-  return `<div class="alert alert-warn gate-hint" id="ccyGateHint">转账审核单币种（${ccy}）与流水币种（${t.currency}）不一致。请返回上一步选择币种一致的转账审核单，不要改审核单币种。</div>`;
+  return `<div class="alert alert-warn gate-hint" id="ccyGateHint">转账审核单币种（${ccy}）与流水币种（${t.currency}）不一致。请选择币种一致的转账审核单，不要改审核单币种。</div>`;
 }
 function claimLineMismatch() {
   const line = currentClaimLine() || claimDraft.line;
@@ -2289,7 +2354,7 @@ function claimLineMismatch() {
   return m.line !== line;
 }
 function claimLineHintHtml() {
-  if (claimDraft.hasOrder === "yes" || !claimLineMismatch()) return `<div id="lineGateHint" hidden></div>`;
+  if (!claimLineMismatch()) return `<div id="lineGateHint" hidden></div>`;
   const line = currentClaimLine() || claimDraft.line;
   const m = currentClaimMerchant() || merchantById(claimDraft.merchantId);
   return `<div class="alert alert-warn gate-hint" id="lineGateHint">所选商户属于「${m.line}」，与当前业务线「${line}」不一致。提交前请确认入账账户无误。</div>`;
@@ -2314,6 +2379,7 @@ function claimExpectFieldHtml(t) {
 }
 function applyClaimExpectAmt(t, value) {
   claimDraft.expectAmt = value;
+  claimDraft.expectDirty = true;
   if ($("fExpectAmtLabel")) $("fExpectAmtLabel").textContent = claimExpectLabel(t);
 }
 function applyClaimXferCcy(t, value) {
@@ -2331,19 +2397,12 @@ function openExpectAmtDialog(t) {
     <div class="modal mini">
       <div class="modal-h">修改期望入账金额<button class="x" id="expectDlgX" type="button">×</button></div>
       <div class="modal-b">
-        <p class="note" style="margin-top:0">当前 ${current}。请输入新金额，并再输入一次确认。第二次不可粘贴。</p>
-        <div class="form-row">
+        <p class="note" style="margin-top:0">当前 ${current}。请输入新金额。</p>
+        <div class="form-row" style="margin-bottom:0">
           <label class="req">期望入账金额</label>
           <div class="fee-paid-wrap">
             <input id="expectAmt1" type="number" min="0.01" step="0.01" placeholder="请输入期望入账金额" />
             <span class="fee-ccy" id="fExpectCcy">${ccy}</span>
-          </div>
-        </div>
-        <div class="form-row" style="margin-bottom:0">
-          <label class="req">再次输入</label>
-          <div class="fee-paid-wrap">
-            <input id="expectAmt2" type="number" min="0.01" step="0.01" placeholder="请再次输入" autocomplete="off" />
-            <span class="fee-ccy">${ccy}</span>
           </div>
         </div>
         <p class="form-err" id="expectDlgErr"></p>
@@ -2355,30 +2414,23 @@ function openExpectAmtDialog(t) {
     </div>`;
   el.classList.add("show");
   const a1 = $("expectAmt1");
-  const a2 = $("expectAmt2");
   const err = $("expectDlgErr");
-  const blockPaste = (e) => e.preventDefault();
-  a2.addEventListener("paste", blockPaste);
-  a2.addEventListener("drop", blockPaste);
   const close = () => closeSubMask();
   $("expectDlgX").onclick = close;
   $("expectDlgCancel").onclick = close;
   const submit = () => {
     const n1 = parseAmt(a1.value);
-    const n2 = parseAmt(a2.value);
-    if (n1 == null || n2 == null) { err.textContent = "请输入两次期望入账金额"; return; }
-    if (Number.isNaN(n1) || Number.isNaN(n2) || n1 <= 0 || n2 <= 0) {
+    if (n1 == null) { err.textContent = "请输入期望入账金额"; return; }
+    if (Number.isNaN(n1) || n1 <= 0) {
       err.textContent = "请输入大于 0 的金额";
       return;
     }
-    if (n1 !== n2) { err.textContent = "两次输入不一致，请重新输入"; return; }
     applyClaimExpectAmt(t, n1.toFixed(2));
     closeSubMask();
     refreshClaimChrome(t);
   };
   $("expectDlgOk").onclick = submit;
-  a2.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } };
-  a1.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); a2.focus(); } };
+  a1.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } };
   setTimeout(() => a1.focus(), 0);
 }
 function bindClaimExpectAmt(t) {
@@ -2420,8 +2472,8 @@ function openSubDialog({ title, bodyHtml, cancelText, okText, altText, onCancel,
 function backToExistingOrders(t) {
   saveClaimStep();
   claimDraft.hasOrder = "yes";
-  claimDraft.orderQ = claimDraft.merchantId || "";
-  claimDraft.step = 1;
+  claimDraft.orderQ = "";
+  claimDraft.step = 2;
   paintClaimModal(t);
 }
 function confirmUncreatedProceed(t, mode) {
@@ -2456,6 +2508,29 @@ function claimExpectOverFlow(t) {
   const expect = parseAmt(claimDraft.expectAmt);
   if (expect == null || Number.isNaN(expect)) return false;
   return expect > money2(t.amount);
+}
+function claimExpectBelowFlow(t) {
+  if (claimCcyMismatch(t)) return false;
+  const expect = parseAmt(claimDraft.expectAmt);
+  if (expect == null || Number.isNaN(expect)) return false;
+  return expect < money2(t.amount);
+}
+function claimExpectBlockedNoFee(t) {
+  if (!claimExpectOverFlow(t)) return false;
+  const m = merchantById(claimDraft.merchantId) || currentClaimMerchant();
+  if (!m) return false;
+  return !merchantCover(m).any;
+}
+function claimExpectBlocked(t) {
+  if (claimExpectBelowFlow(t)) {
+    toast("期望入账不能低于流水金额，请先修改");
+    return true;
+  }
+  if (claimExpectBlockedNoFee(t)) {
+    toast("该商户不支持手续费补足，请先将期望入账改为不超过流水金额");
+    return true;
+  }
+  return false;
 }
 function claimNeedFeeStep(t) {
   if (!claimExpectOverFlow(t)) return false;
@@ -2525,11 +2600,22 @@ function claimCreditState(t) {
   }
   return { src, dst, rate, base, auto, amt, same, merchant: m };
 }
+function claimOrderFieldsReady(t) {
+  if (claimDraft.hasOrder === "yes") {
+    const order = selectedClaimOrder();
+    return !!(order && claimOrderSelectable(order, t));
+  }
+  if (claimDraft.hasOrder === "no") {
+    const expectNum = Number(claimDraft.expectAmt);
+    return !!(claimDraft.xferCcy && claimDraft.expectAmt && Number.isFinite(expectNum) && expectNum > 0);
+  }
+  return false;
+}
 function claimShowCredit(t) {
   if (claimCcyMismatch(t)) return false;
   if (!claimActiveMerchant()) return false;
   if (claimDraft.step === 3) return true;
-  if (claimDraft.step === 2) return !claimNeedStep3(t);
+  if (claimDraft.step === 2) return claimOrderFieldsReady(t) && !claimNeedStep3(t);
   return false;
 }
 function merchantFxCover(m) {
@@ -2550,8 +2636,8 @@ function readFxCover(t, { live } = {}) {
   if (!st || st.same) return { on: false, fx: 0 };
   if (st.auto == null || st.amt == null) return live ? { pending: true } : { error: "请确认最终入账金额" };
   const diff = money2(st.amt - st.auto);
-  if (diff < 0) return { error: "最终入账金额不能低于自动换算金额", diff };
-  if (diff === 0) return { on: false, fx: 0, diff: 0 };
+  if (diff < 0) return { on: false, fx: 0, gain: money2(-diff), diff };
+  if (diff === 0) return { on: false, fx: 0, gain: 0, diff: 0 };
   const limit = fxCap(st.auto);
   if (diff > limit) return { error: "超出汇损最大比例 1%", diff, limit };
   if (!merchantFxCover(st.merchant)) {
@@ -2566,8 +2652,9 @@ function readFxCover(t, { live } = {}) {
 }
 function fxCoverNote(cap, diff, on) {
   if (!claimActiveMerchant()) return "请先选择商户。支持汇损补足的商户，可开启公司承担。";
-  if (!cap) return "该商户不支持汇损补足。最终入账须等于自动换算金额。";
-  if (diff <= 0) return "按自动换算入账。若需公司承担汇损，请先提高最终入账金额（上限 1%）。汇率按打开本步时的 FUND 报价锁定。";
+  if (diff < 0) return "最终入账低于锁定报价换算结果。商户按最终入账金额入账，差额记为汇益，计入公司收入。";
+  if (!cap) return "该商户不支持汇损补足。最终入账不得高于自动换算金额；调低则差额记为汇益、计入公司收入。";
+  if (diff <= 0) return "按自动换算入账。调高最终入账可走汇损补足（上限 1%）；调低则差额记为汇益、计入公司收入。汇率按打开本步时的 FUND 报价锁定。";
   if (on === false) return "已关闭公司承担。请将最终入账改回自动换算，或重新开启。";
   return "差额全部记为汇损补足，上限为自动换算金额的 1%。";
 }
@@ -2616,8 +2703,19 @@ function claimCreditHtml(t) {
         <p class="note" id="fxNote">${fxCoverNote(fxCapOk, fxDiff, fxOn)}</p>
         <p class="fee-err" id="fxErr" ${fxRes && fxRes.error ? "" : "hidden"}>${fxRes && fxRes.error ? fxRes.error : ""}</p>
       </div>`;
+  } else if (fxDiff < 0) {
+    const gain = money2(-fxDiff);
+    fxHtml = `
+      <div class="fx-cover" id="fxBlock">
+        <div class="fee-head"><div class="ttl">汇益</div></div>
+        <div class="layer-kv">
+          <div class="k">汇益差额</div><div class="v amt">${amtLabel(st.dst, gain)}</div>
+          <div class="k">计入公司收入</div><div class="v amt">${amtLabel(st.dst, gain)}</div>
+        </div>
+        <p class="note" id="fxNote">${fxCoverNote(fxCapOk, fxDiff)}</p>
+      </div>`;
   } else {
-    fxHtml = `<p class="note" id="fxNote">${fxCoverNote(fxCapOk, 0)}</p>`;
+    fxHtml = `<p class="note" id="fxNote">${fxCoverNote(fxCapOk, fxDiff)}</p>`;
   }
   const path = st.same
     ? `<div class="credit-path same">
@@ -2641,8 +2739,8 @@ function claimCreditSlotHtml(t) {
 }
 function claimStepsHtml(t) {
   const labels = claimNeedStep3(t)
-    ? ["转账审核单", "认领信息", "入账确认"]
-    : ["转账审核单", "认领信息"];
+    ? ["认领信息", "转账审核单", "入账确认"]
+    : ["认领信息", "转账审核单"];
   return `<div class="claim-steps" id="claimSteps">${labels.map((l, i) => {
     const n = i + 1;
     const cls = n === claimDraft.step ? "on" : (n < claimDraft.step ? "done" : "");
@@ -2664,11 +2762,12 @@ function bindClaimFooter(t) {
   const ok = $("ok");
   if (ok) ok.onclick = () => {
     saveClaimStep();
-    if (claimDraft.hasOrder !== "yes" && claimDraft.step === 2) {
-      if (!validateClaimStep2(t)) return;
+    if (claimDraft.step === 2 && claimDraft.hasOrder !== "yes") {
+      if (!validateClaimOrderStep(t)) return;
       confirmUncreatedProceed(t, "submit");
       return;
     }
+    if (claimDraft.step === 2 && !validateClaimOrderStep(t)) return;
     openClaimOkConfirm();
   };
   const cx2 = $("cx2");
@@ -2686,20 +2785,20 @@ function expectGateHintHtml(t) {
     const m = merchantById(claimDraft.merchantId) || currentClaimMerchant();
     const cap = merchantCover(m);
     if (claimDraft.merchantId && !cap.any) {
-      return `<div class="alert alert-warn gate-hint" id="expectGateHint">期望入账高于流水 ${amtLabel(t.currency, diff)}。该商户不支持手续费补足，本笔将按流水金额入账，期望入账仅作记录，不会改写审核单。</div>`;
+      return `<div class="alert alert-warn gate-hint" id="expectGateHint">期望入账高于流水 ${amtLabel(t.currency, diff)}。该商户不支持手续费补足，请将期望入账改为不超过流水金额后，才能继续认领。</div>`;
     }
     if (!claimDraft.merchantId) {
       return `<p class="note gate-hint" id="expectGateHint">期望入账高于流水，差额 ${amtLabel(t.currency, diff)}。选择支持补足的商户后，将进入入账确认。</p>`;
     }
-    return `<p class="note gate-hint" id="expectGateHint">期望入账高于流水，差额 ${amtLabel(t.currency, diff)}。下一步进行入账确认。</p>`;
+    return `<p class="note gate-hint" id="expectGateHint">期望入账高于流水，差额 ${amtLabel(t.currency, diff)}。之后将进入入账确认。</p>`;
   }
   if (diff < 0) {
-    return `<div class="alert alert-warn gate-hint" id="expectGateHint">期望入账低于流水 ${amtLabel(t.currency, Math.abs(diff))}。本笔仍按流水金额全额入账，差额不退不拆。若需部分入账，请先拆分流水或联系财务。</div>`;
+    return `<div class="alert alert-warn gate-hint" id="expectGateHint">期望入账低于流水 ${amtLabel(t.currency, Math.abs(diff))}。请将期望入账改为不低于流水金额后，才能继续认领。</div>`;
   }
   if (claimNeedFxStep(t)) {
     return `<p class="note gate-hint" id="expectGateHint">期望入账等于流水，无需手续费补足。账户币种不同，下一步确认入账换算。</p>`;
   }
-  return `<p class="note gate-hint" id="expectGateHint">期望入账等于流水，无需手续费补足，可直接确认认领。</p>`;
+    return `<p class="note gate-hint" id="expectGateHint">期望入账等于流水，无需手续费补足。</p>`;
 }
 function refreshClaimChrome(t) {
   const steps = $("claimSteps");
@@ -2734,22 +2833,31 @@ function claimFlowHtml(t) {
     </div>`;
 }
 function filteredClaimOrders() {
+  const merchantId = claimDraft.merchantId;
   const q = (claimDraft.orderQ || "").trim().toLowerCase();
   return CLAIM_ORDERS.filter(o => {
+    if (o.merchantId !== merchantId) return false;
+    if (o.status !== "待匹配") return false;
     if (!q) return true;
-    return [o.reviewNo, o.merchantId, o.merchantName, o.id].some(v => String(v).toLowerCase().includes(q));
+    return [o.reviewNo, o.id].some(v => String(v).toLowerCase().includes(q));
   });
 }
 function claimOrderStatusTag(status) {
   const cls = status === "待匹配" ? "tag-blue" : status === "已匹配" ? "tag-green" : "tag-gray";
   return `<span class="tag ${cls}">${status}</span>`;
 }
-function claimOrderRowsHtml() {
+function claimOrderRowsHtml(t) {
   const rows = filteredClaimOrders();
-  if (!rows.length) return `<tr><td colspan="7" class="muted">无匹配的转账审核单</td></tr>`;
+  if (!rows.length) {
+    return `<tr><td colspan="7" class="muted">该商户暂无待匹配审核单。请选择「未创建」，或返回上一步更换商户。</td></tr>`;
+  }
   return rows.map(o => {
-    const disabled = o.status !== "待匹配";
+    const ccyBad = !!(t && o.currency && t.currency && o.currency !== t.currency);
+    const disabled = o.status !== "待匹配" || ccyBad;
     const checked = claimDraft.orderId === o.id ? "checked" : "";
+    const statusCell = ccyBad
+      ? `${claimOrderStatusTag(o.status)} <span class="muted">币种不一致</span>`
+      : claimOrderStatusTag(o.status);
     return `<tr class="${disabled ? "disabled" : ""}">
       <td><input type="radio" name="claimOrder" value="${o.id}" ${checked} ${disabled ? "disabled" : ""} /></td>
       <td class="mono">${o.reviewNo}</td>
@@ -2757,24 +2865,28 @@ function claimOrderRowsHtml() {
       <td>${o.biz}</td>
       <td>${o.platform}</td>
       <td>${o.amount == null ? "-" : amtLabel(o.currency, o.amount)}</td>
-      <td>${claimOrderStatusTag(o.status)}</td>
+      <td>${statusCell}</td>
     </tr>`;
   }).join("");
 }
 function bindClaimOrderRadios(t) {
   document.querySelectorAll("input[name=claimOrder]").forEach(r => {
     r.onchange = () => {
-      claimDraft.orderId = r.value;
-      const order = selectedClaimOrder();
-      claimDraft.expectAmt = order && order.amount != null ? Number(order.amount).toFixed(2) : "";
-      if (t) refreshClaimChrome(t);
+      const order = CLAIM_ORDERS.find(o => o.id === r.value);
+      if (!claimOrderSelectable(order, t)) {
+        r.checked = false;
+        toast("该转账审核单不可关联");
+        return;
+      }
+      applyLinkedOrder(t, order);
+      if (t) paintClaimModal(t);
     };
   });
 }
 function refreshClaimOrderTable(t) {
   const body = document.querySelector(".order-table tbody");
   if (!body) return;
-  body.innerHTML = claimOrderRowsHtml();
+  body.innerHTML = claimOrderRowsHtml(t);
   bindClaimOrderRadios(t);
 }
 function resolveClaimOrderFromInput() {
@@ -2795,7 +2907,7 @@ function openBizClaimModal(id) {
   activeId = t.id;
   claimDraft = emptyClaimDraft();
   if (t.rec && t.rec.confidence >= cfg.threshold) claimDraft.useRec = true;
-  if (t.sceneReviewNo) claimDraft.orderQ = t.sceneReviewNo;
+  claimDraft.xferCcy = t.currency;
   $("mask").classList.add("show");
   paintClaimModal(t);
 }
@@ -2812,8 +2924,8 @@ function paintClaimModal(t) {
         ${claimFlowHtml(t)}
       </div>
       <div class="modal-b">
-        ${step === 1 ? claimStepOrderHtml(t) : ""}
-        ${step === 2 ? claimStepInfoHtml(t) : ""}
+        ${step === 1 ? claimStepInfoHtml(t) : ""}
+        ${step === 2 ? claimStepOrderHtml(t) : ""}
         ${step === 3 ? claimStepFeeHtml(t) : ""}
       </div>
       <div class="modal-f">${claimFooterHtml(t)}</div>
@@ -2822,70 +2934,113 @@ function paintClaimModal(t) {
   bindClaimFooter(t);
   bindClaimStep(t);
 }
-function claimStepOrderHtml() {
+function pendingMerchantBannerHtml() {
+  const orders = unmatchedPrechargeOrders(claimDraft.merchantId);
+  if (!orders.length) return "";
+  return `<div class="alert alert-warn" style="margin-bottom:12px">该商户已有 ${orders.length} 张待匹配转账审核单，建议优先关联，避免重复创建。</div>`;
+}
+function claimReviewFieldsHtml(t, { fromOrder } = {}) {
+  const xferCcy = claimDraft.xferCcy || t.currency;
+  if (fromOrder) {
+    const order = selectedClaimOrder();
+    return `
+      <div class="claim-picked">
+        <div>
+          <div class="k">已选审核单</div>
+          <div class="v mono">${order ? order.reviewNo : "-"}</div>
+        </div>
+        <div>
+          <div class="k">转账凭证</div>
+          <div class="v">${order && order.voucher ? `<span class="file-item">${order.voucher}</span>` : "-"}</div>
+        </div>
+        <div>
+          <div class="k">转账币种</div>
+          ${claimCcyFieldHtml(t, xferCcy)}
+        </div>
+        <div>
+          <div class="k">期望入账金额</div>
+          ${claimExpectFieldHtml(t)}
+        </div>
+      </div>
+      ${claimCcyHintHtml(t)}
+      ${expectGateHintHtml(t)}`;
+  }
+  return `
+      <div class="claim-inline-fields">
+        <div class="pair">
+          <span class="k">转账币种</span>
+          ${claimCcyFieldHtml(t, xferCcy)}
+        </div>
+        <div class="pair">
+          <span class="k">期望入账金额 <span class="field-tip" title="期望充入客户资金账户的金额，该金额应小于客户实际转账金额（转账凭证中的金额）。">?</span></span>
+          ${claimExpectFieldHtml(t)}
+        </div>
+      </div>
+      <p class="note" style="margin-top:8px">未创建时转账币种等于流水币种。期望默认带入流水金额，可点修改。</p>
+      ${claimCcyHintHtml(t)}
+      ${expectGateHintHtml(t)}`;
+}
+function claimStepOrderHtml(t) {
   const yes = claimDraft.hasOrder === "yes";
   const no = claimDraft.hasOrder === "no";
+  const m = merchantById(claimDraft.merchantId);
+  const merchantText = m ? merchantLabel(m) : (claimDraft.merchantId || "-");
+  const order = selectedClaimOrder();
+  const linked = yes && order ? claimReviewFieldsHtml(t, { fromOrder: true }) : "";
+  const createdFields = no ? `
+      ${claimReviewFieldsHtml(t, { fromOrder: false })}
+      <div class="form-row" style="margin-top:12px;margin-bottom:0">
+        <label class="req">转账凭证</label>
+        <div class="file ${claimDraft.voucherName ? "ok" : ""}" id="voucherBox">
+          <span id="voucherLabel">${claimDraft.voucherName ? `<span class="file-item">${claimDraft.voucherName}</span>` : "请上传转账凭证"}</span>
+          <button class="btn" type="button" id="pickFile">选择文件</button>
+        </div>
+      </div>` : "";
   return `
     <div class="claim-sec">
       <div class="sec-label">是否已创建转账审核单</div>
+      <p class="note" style="margin-top:0">当前认领商户：${claimDraft.line || "-"} · ${merchantText}。已创建时只加载该商户的待匹配单。</p>
+      ${pendingMerchantBannerHtml()}
+      ${claimLineHintHtml()}
       <div class="choice-row">
         <button type="button" class="choice ${yes ? "on" : ""}" id="pickYes">
           <b>已创建</b>
-          <p>在列表中选择，或输入转账审核单号定位。</p>
+          <p>选择该商户下待匹配、且转账币种与流水一致的审核单。币种、期望、凭证沿用该单。</p>
         </button>
         <button type="button" class="choice ${no ? "on" : ""}" id="pickNo">
           <b>未创建</b>
-          <p>下一步填写认领信息和转账凭证，系统同时生成转账审核单。</p>
+          <p>填写转账币种、期望入账并上传凭证，系统同时生成转账审核单。</p>
         </button>
       </div>
       <div id="orderPickBox" ${yes ? "" : "hidden"}>
         <div class="form-row">
           <label>转账审核单号</label>
           <div class="order-q">
-            <input id="orderQ" placeholder="场景单号搜 TR-SC-，或输入审核单号 / 商户" value="${claimDraft.orderQ.replace(/"/g, "&quot;")}" />
+            <input id="orderQ" placeholder="本商户内搜 TR-SC-，也可输入完整单号" value="${claimDraft.orderQ.replace(/"/g, "&quot;")}" />
             <button type="button" class="btn" id="orderSearch">查询</button>
           </div>
         </div>
-        <div class="order-wrap">
+        <p class="note" style="margin:0 0 8px">仅「待匹配」且转账币种与流水一致的审核单可关联。</p>
+        <div class="order-wrap ${yes && order ? "has-pick" : ""}">
           <table class="order-table">
             <thead><tr><th></th><th>转账审核单号</th><th>商户</th><th>子业务</th><th>渠道</th><th>期望入账</th><th>状态</th></tr></thead>
-            <tbody>${claimOrderRowsHtml()}</tbody>
+            <tbody>${claimOrderRowsHtml(t)}</tbody>
           </table>
         </div>
-        <p class="note">仅「待匹配」的审核单可关联本笔流水。已匹配 / 已撤销 / 作废的不可选。</p>
+        ${linked}
       </div>
-      <p class="note" id="orderNoHint" ${no ? "" : "hidden"}>未创建时，下一步将填写认领商户、业务线和转账凭证。</p>
-    </div>`;
+      <p class="note" id="orderNoHint" ${no ? "" : "hidden"}>未创建将按第一步的商户生成新审核单。转账币种、期望入账和凭证在本步填写。</p>
+      ${createdFields}
+    </div>
+    ${claimCreditSlotHtml(t)}`;
 }
 function claimStepInfoHtml(t) {
-  const order = selectedClaimOrder();
-  if (claimDraft.hasOrder === "yes" && order) {
-    const xferCcy = claimDraft.xferCcy || order.currency || t.currency;
-    return `
-      <div class="claim-sec">
-        <div class="sec-label">认领信息</div>
-        <p class="note" style="margin-top:0">已关联转账审核单，认领商户和凭证沿用该单，无需再填。</p>
-        <div class="kv-mini">
-          <div class="k">转账审核单号</div><div class="v mono">${order.reviewNo}</div>
-          <div class="k">子业务 / 商户</div><div>${order.biz} · ${order.merchantName}（${order.merchantId}）</div>
-          <div class="k">转账凭证</div><div class="file-item">${order.voucher}</div>
-          <div class="k">转账币种</div><div>${claimCcyFieldHtml(t, xferCcy)}</div>
-          <div class="k">期望入账金额</div><div>${claimExpectFieldHtml(t)}</div>
-        </div>
-        ${claimCcyHintHtml(t)}
-        ${expectGateHintHtml(t)}
-        ${claimLineHintHtml()}
-        <input type="hidden" id="fMerchant" value="${order.merchantId}" />
-      </div>
-      ${claimCreditSlotHtml(t)}`;
-  }
   const line = claimDraft.line;
   const merchantId = claimDraft.merchantId;
-  const xferCcy = claimDraft.xferCcy || t.currency;
   return `
     <div class="claim-sec">
       <div class="sec-label">认领信息</div>
-      ${t.rec ? "" : `<div class="alert alert-warn" style="margin-bottom:12px">暂无推荐，请手工选择业务线和商户，并上传转账凭证。</div>`}
+      ${t.rec ? "" : `<div class="alert alert-warn" style="margin-bottom:12px">暂无推荐，请手工选择业务线和商户。</div>`}
       <div class="form-grid">
         <div class="form-row">
           <label class="req">业务线</label>
@@ -2898,18 +3053,8 @@ function claimStepInfoHtml(t) {
             <input id="fMerchantQ" placeholder="请输入商户ID搜索" autocomplete="off" />
           </div>
         </div>
-        <div class="form-row">
-          <label class="req">转账币种</label>
-          ${claimCcyFieldHtml(t, xferCcy)}
-        </div>
-        <div class="form-row expect-row">
-          <label class="req">期望入账金额 <span class="field-tip" title="期望充入客户资金账户的金额，该金额应小于客户实际转账金额（转账凭证中的金额）。">?</span></label>
-          ${claimExpectFieldHtml(t)}
-        </div>
       </div>
-      <p class="note" style="margin-top:0">默认带入当前流水金额。修改需输入两次确认。</p>
-      ${claimCcyHintHtml(t)}
-      ${expectGateHintHtml(t)}
+      <p class="note" style="margin-top:0">先确定入账商户。下一步再选择是否关联已有转账审核单；转账币种、期望入账随审核单填写或沿用。</p>
       ${claimLineHintHtml()}
       ${t.rec ? `<div class="rec-compact">
         <div class="rec-compact-h">
@@ -2926,15 +3071,7 @@ function claimStepInfoHtml(t) {
         <p class="rec-hint" id="recHint" ${claimDraft.useRec ? "" : "hidden"}>系统推荐仅供参考。达阈值已预填业务线和商户，可再修改。</p>
         <ul class="reason" id="recReasons" hidden>${t.rec.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
       </div>` : ""}
-    </div>
-    <div class="form-row" style="margin-bottom:0">
-      <label class="req">转账凭证</label>
-      <div class="file ${claimDraft.voucherName ? "ok" : ""}" id="voucherBox">
-        <span id="voucherLabel">${claimDraft.voucherName ? `<span class="file-item">${claimDraft.voucherName}</span>` : "请上传转账凭证"}</span>
-        <button class="btn" type="button" id="pickFile">选择文件</button>
-      </div>
-    </div>
-    ${claimCreditSlotHtml(t)}`;
+    </div>`;
 }
 function claimStepFeeHtml(t) {
   const order = selectedClaimOrder();
@@ -2974,43 +3111,12 @@ function claimStepFeeHtml(t) {
 }
 function bindClaimStep(t) {
   if (claimDraft.step === 1) {
-    $("pickYes").onclick = () => {
-      claimDraft.hasOrder = "yes";
-      if (t.sceneReviewNo && !claimDraft.orderQ) claimDraft.orderQ = t.sceneReviewNo;
-      paintClaimModal(t);
-    };
-    $("pickNo").onclick = () => { claimDraft.hasOrder = "no"; clearClaimLinkedOrder(); paintClaimModal(t); };
-    const q = $("orderQ");
-    const search = () => {
-      claimDraft.orderQ = q ? q.value : claimDraft.orderQ;
-      resolveClaimOrderFromInput();
-      refreshClaimOrderTable(t);
-    };
-    if (q) {
-      q.oninput = () => { claimDraft.orderQ = q.value; };
-      q.onkeydown = (e) => {
-        if (e.key !== "Enter") return;
-        e.preventDefault();
-        search();
-      };
-    }
-    const searchBtn = $("orderSearch");
-    if (searchBtn) searchBtn.onclick = search;
-    bindClaimOrderRadios(t);
-  }
-  if (claimDraft.step === 2) {
-    bindClaimXferCcy(t);
-    bindClaimExpectAmt(t);
-    bindClaimCredit(t);
     document.querySelectorAll('#fLine input[name="fLine"]').forEach(r => {
       r.onchange = () => {
         claimDraft.line = r.value;
         refreshClaimChrome(t);
       };
     });
-  }
-  if (claimDraft.step === 2) claimFeeSync = () => refreshClaimChrome(t);
-  if (claimDraft.step === 2 && claimDraft.hasOrder !== "yes") {
     bindMerchantCombo(claimDraft.merchantId);
     bindUseRec(t);
     if (claimDraft.useRec) applyClaimRec(t, true);
@@ -3022,6 +3128,35 @@ function bindClaimStep(t) {
         recBtn.textContent = box.hidden ? "查看原因" : "收起原因";
       };
     }
+  }
+  if (claimDraft.step === 2) {
+    $("pickYes").onclick = () => {
+      claimDraft.hasOrder = "yes";
+      paintClaimModal(t);
+    };
+    $("pickNo").onclick = () => {
+      claimDraft.hasOrder = "no";
+      unlinkClaimOrder(t);
+      claimDraft.xferCcy = t.currency;
+      claimDraft.expectAmt = Number(t.amount).toFixed(2);
+      paintClaimModal(t);
+    };
+    const q = $("orderQ");
+    const search = () => searchClaimOrder(t);
+    if (q) {
+      q.oninput = () => { claimDraft.orderQ = q.value; };
+      q.onkeydown = (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        search();
+      };
+    }
+    const searchBtn = $("orderSearch");
+    if (searchBtn) searchBtn.onclick = search;
+    bindClaimOrderRadios(t);
+    bindClaimXferCcy(t);
+    bindClaimExpectAmt(t);
+    bindClaimCredit(t);
     const pick = $("pickFile");
     if (pick) pick.onclick = () => {
       claimDraft.voucherName = `转账凭证-${t.txnNo.slice(-6)}.pdf`;
@@ -3033,6 +3168,51 @@ function bindClaimStep(t) {
     if ($("swFee")) bindFeeControls(t);
     bindClaimCredit(t);
   }
+  const picked = document.querySelector("#mask .claim-picked");
+  if (picked) picked.scrollIntoView({ block: "nearest" });
+}
+function searchClaimOrder(t) {
+  const typed = ($("orderQ")?.value || claimDraft.orderQ || "").trim();
+  claimDraft.orderQ = typed;
+  const exact = findClaimOrderByNo(typed);
+  if (exact && exact.merchantId !== claimDraft.merchantId) {
+    openSwitchMerchantForOrder(t, exact);
+    return;
+  }
+  if (exact && claimOrderSelectable(exact, t)) {
+    applyLinkedOrder(t, exact);
+    paintClaimModal(t);
+    return;
+  }
+  if (exact && exact.merchantId === claimDraft.merchantId) {
+    toast(exact.currency && t.currency && exact.currency !== t.currency
+      ? "该审核单币种与流水不一致，请换单"
+      : "该转账审核单不可关联");
+  }
+  refreshClaimOrderTable(t);
+}
+function openSwitchMerchantForOrder(t, order) {
+  const m = merchantById(order.merchantId);
+  const cur = merchantById(claimDraft.merchantId);
+  openSubDialog({
+    title: "审核单商户不一致",
+    bodyHtml: `<p class="note" style="margin-top:0">该单号属于「${m ? merchantLabel(m) : order.merchantId}」，当前认领商户是「${cur ? merchantLabel(cur) : (claimDraft.merchantId || "-")}」。改用该审核单的商户后才能关联。</p>`,
+    cancelText: "取消",
+    okText: "改用该商户并关联",
+    onOk: () => {
+      closeSubMask();
+      if (order.status !== "待匹配") { toast("该转账审核单不可关联"); return; }
+      if (t.currency && order.currency && order.currency !== t.currency) {
+        toast("该审核单币种与流水不一致，请换单");
+        return;
+      }
+      claimDraft.merchantId = order.merchantId;
+      claimDraft.hasOrder = "yes";
+      claimDraft.orderQ = order.reviewNo;
+      applyLinkedOrder(t, order);
+      paintClaimModal(t);
+    }
+  });
 }
 function refreshClaimCredit(t) {
   const slot = $("creditSlot");
@@ -3068,18 +3248,11 @@ function openFinalCreditDialog(t) {
     <div class="modal mini">
       <div class="modal-h">修改最终入账金额<button class="x" id="creditDlgX" type="button">×</button></div>
       <div class="modal-b">
-        <p class="note" style="margin-top:0">自动换算 ${amtLabel(st.dst, st.auto)}。请输入最终希望入账的金额，并再输入一次确认。第二次不可粘贴。高于自动换算的差额记为汇损补足，不得超过自动换算的 1%。公司只补不扣。</p>
-        <div class="form-row">
+        <p class="note" style="margin-top:0">自动换算 ${amtLabel(st.dst, st.auto)}。请输入最终希望入账的金额。高于自动换算：差额为汇损补足（上限 1%），由公司承担。低于自动换算：差额为汇益，记为公司收入。商户均按最终入账金额入账。</p>
+        <div class="form-row" style="margin-bottom:0">
           <label class="req">最终入账金额</label>
           <div class="fee-paid-wrap">
             <input id="creditAmt1" type="number" min="0.01" step="0.01" placeholder="请输入最终入账金额" />
-            <span class="fee-ccy">${st.dst}</span>
-          </div>
-        </div>
-        <div class="form-row" style="margin-bottom:0">
-          <label class="req">再次输入</label>
-          <div class="fee-paid-wrap">
-            <input id="creditAmt2" type="number" min="0.01" step="0.01" placeholder="请再次输入" autocomplete="off" />
             <span class="fee-ccy">${st.dst}</span>
           </div>
         </div>
@@ -3092,25 +3265,15 @@ function openFinalCreditDialog(t) {
     </div>`;
   el.classList.add("show");
   const a1 = $("creditAmt1");
-  const a2 = $("creditAmt2");
   const err = $("creditDlgErr");
-  const blockPaste = (e) => e.preventDefault();
-  a2.addEventListener("paste", blockPaste);
-  a2.addEventListener("drop", blockPaste);
   const close = () => closeSubMask();
   $("creditDlgX").onclick = close;
   $("creditDlgCancel").onclick = close;
   const submit = () => {
     const n1 = parseAmt(a1.value);
-    const n2 = parseAmt(a2.value);
-    if (n1 == null || n2 == null) { err.textContent = "请输入两次最终入账金额"; return; }
-    if (Number.isNaN(n1) || Number.isNaN(n2) || n1 <= 0 || n2 <= 0) {
+    if (n1 == null) { err.textContent = "请输入最终入账金额"; return; }
+    if (Number.isNaN(n1) || n1 <= 0) {
       err.textContent = "请输入大于 0 的金额";
-      return;
-    }
-    if (n1 !== n2) { err.textContent = "两次输入不一致，请重新输入"; return; }
-    if (n1 < st.auto) {
-      err.textContent = `最终入账金额不能低于自动换算金额 ${amtLabel(st.dst, st.auto)}`;
       return;
     }
     const fxLimit = fxCap(st.auto);
@@ -3126,63 +3289,62 @@ function openFinalCreditDialog(t) {
     refreshClaimCredit(t);
   };
   $("creditDlgOk").onclick = submit;
-  a2.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } };
-  a1.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); a2.focus(); } };
+  a1.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } };
   setTimeout(() => a1.focus(), 0);
 }
 function saveClaimStep() {
-  if (claimDraft.step === 2) {
-    if ($("fXferCcy")) claimDraft.xferCcy = $("fXferCcy").value;
-    if (claimDraft.hasOrder !== "yes") {
-      claimDraft.line = currentClaimLine();
-      claimDraft.merchantId = $("fMerchant") ? $("fMerchant").value : claimDraft.merchantId;
-      claimDraft.useRec = !!($("swUseRec") && $("swUseRec").classList.contains("on"));
-    }
+  if (claimDraft.step === 1) {
+    claimDraft.line = currentClaimLine();
+    claimDraft.merchantId = $("fMerchant") ? $("fMerchant").value : claimDraft.merchantId;
+    claimDraft.useRec = !!($("swUseRec") && $("swUseRec").classList.contains("on"));
   }
+  if (claimDraft.step === 2 && $("fXferCcy")) claimDraft.xferCcy = $("fXferCcy").value;
   if ($("swFx")) claimDraft.fxOn = $("swFx").classList.contains("on");
   if (claimDraft.step === 3) {
     claimDraft.paidAmt = $("fPaidAmt") ? $("fPaidAmt").value : "";
     claimDraft.feeOn = $("swFee") ? $("swFee").classList.contains("on") : null;
   }
 }
-function validateClaimStep2(t) {
-  if (claimDraft.hasOrder !== "yes") {
-    if (!claimDraft.line) { toast("请选择业务线"); return false; }
-    if (!claimDraft.merchantId) { toast("请选择商户"); return false; }
+function validateClaimInfoStep() {
+  if (!claimDraft.line) { toast("请选择业务线"); return false; }
+  if (!claimDraft.merchantId) { toast("请选择商户"); return false; }
+  return true;
+}
+function validateClaimOrderStep(t) {
+  if (claimDraft.hasOrder !== "yes" && claimDraft.hasOrder !== "no") {
+    toast("请选择是否已创建转账审核单");
+    return false;
+  }
+  if (claimDraft.hasOrder === "yes") {
+    const order = selectedClaimOrder() || resolveClaimOrderFromInput();
+    if (!order) { toast("请选择待匹配的转账审核单，或输入转账审核单号"); return false; }
+    if (!claimOrderSelectable(order, t)) {
+      toast(order.currency && t.currency && order.currency !== t.currency
+        ? "该审核单币种与流水不一致，请换单"
+        : "该转账审核单不可关联");
+      return false;
+    }
+    applyLinkedOrder(t, order);
+  } else {
     const expectNum = Number(claimDraft.expectAmt);
+    if (!claimDraft.xferCcy) { toast("请确认转账币种"); return false; }
     if (!claimDraft.expectAmt || !Number.isFinite(expectNum) || expectNum <= 0) {
       toast("请输入期望入账金额");
       return false;
     }
     if (!claimDraft.voucherName) { toast("请上传转账凭证"); return false; }
-    if (!claimDraft.xferCcy) { toast("请选择转账币种"); return false; }
   }
   if (claimCcyMismatch(t)) {
-    toast("转账审核单币种与流水币种不一致，请返回上一步选择币种一致的转账审核单");
+    toast("转账审核单币种与流水币种不一致，请选择币种一致的转账审核单");
     return false;
   }
+  if (claimExpectBlocked(t)) return false;
   return true;
 }
 function goClaimNext(t) {
   if (claimDraft.step === 1) {
-    if (claimDraft.hasOrder !== "yes" && claimDraft.hasOrder !== "no") {
-      toast("请选择是否已创建转账审核单");
-      return;
-    }
-    if (claimDraft.hasOrder === "yes") {
-      const order = resolveClaimOrderFromInput();
-      if (!order) { toast("请选择待匹配的转账审核单，或输入转账审核单号"); return; }
-      if (order.status !== "待匹配") { toast("该转账审核单不可关联"); return; }
-      claimDraft.line = order.biz;
-      claimDraft.merchantId = order.merchantId;
-      claimDraft.voucherName = order.voucher;
-      claimDraft.expectAmt = order.amount == null ? "" : Number(order.amount).toFixed(2);
-      claimDraft.xferCcy = order.currency || "";
-    } else {
-      claimDraft.orderId = "";
-      if (claimDraft.expectAmt === "") claimDraft.expectAmt = Number(t.amount).toFixed(2);
-      if (!claimDraft.xferCcy) claimDraft.xferCcy = t.currency;
-    }
+    saveClaimStep();
+    if (!validateClaimInfoStep()) return;
     claimDraft.editCcy = false;
     claimDraft.step = 2;
     paintClaimModal(t);
@@ -3190,7 +3352,7 @@ function goClaimNext(t) {
   }
   if (claimDraft.step === 2) {
     saveClaimStep();
-    if (!validateClaimStep2(t)) return;
+    if (!validateClaimOrderStep(t)) return;
     if (claimNeedStep3(t)) {
       if (claimDraft.hasOrder !== "yes") {
         confirmUncreatedProceed(t, "cover");
@@ -3209,6 +3371,7 @@ function goClaimNext(t) {
 }
 function applyClaimRec(t, on) {
   if (on && t.rec) {
+    claimDraft.line = t.rec.bizLine;
     document.querySelectorAll('#fLine input[name="fLine"]').forEach(r => {
       r.checked = r.value === t.rec.bizLine;
     });
@@ -3412,7 +3575,7 @@ function previewClaimSubmit() {
   if (!merchantId) { toast("请选择商户"); return null; }
   if (!claimDraft.voucherName) { toast("请上传转账凭证"); return null; }
   if (claimCcyMismatch(t)) {
-    toast("转账审核单币种与流水币种不一致，请返回上一步选择币种一致的转账审核单");
+    toast("转账审核单币种与流水币种不一致，请选择币种一致的转账审核单");
     return null;
   }
   if (getFlowLock(t.txnNo)) {
@@ -3446,14 +3609,21 @@ function previewClaimSubmit() {
 function claimOkLine(label, value) {
   return `<div class="k">${label}</div><div class="v amt">${value}</div>`;
 }
-function creditBasisText({ same, fee, fx, expect, flow }) {
+function fxGainOf(fxRes) {
+  if (!fxRes) return 0;
+  if (Number(fxRes.gain) > 0) return Number(fxRes.gain);
+  if (typeof fxRes.diff === "number" && fxRes.diff < 0) return money2(-fxRes.diff);
+  return 0;
+}
+function creditBasisText({ same, fee, fx, gain, expect, flow }) {
   if (fx > 0) return "含汇损补足";
+  if (gain > 0) return "含汇益（记公司收入）";
   if (fee > 0) return "流水 + 手续费补足";
   if (expect != null && expect < flow) return "按流水全额入账";
   if (expect != null && expect > flow && fee === 0) return "按流水入账（期望仅作记录）";
   return same ? "按流水原币入账" : "按自动换算入账";
 }
-function creditConfirmHtml({ lead, creditCcy, creditAmt, flowCcy, fee, fx, basis, extra }) {
+function creditConfirmHtml({ lead, creditCcy, creditAmt, flowCcy, fee, fx, gain, basis, extra }) {
   const hasCover = fee > 0 || fx > 0;
   const coverHtml = hasCover ? `
       <div class="confirm-sec">
@@ -3461,6 +3631,13 @@ function creditConfirmHtml({ lead, creditCcy, creditAmt, flowCcy, fee, fx, basis
         <div class="kv-mini">
           ${fee > 0 ? `<div class="k">手续费补足 · ${flowCcy}</div><div>${flowCcy} ${money(fee)}</div>` : ""}
           ${fx > 0 ? `<div class="k">汇损补足 · ${creditCcy}</div><div>${creditCcy} ${money(fx)}</div>` : ""}
+        </div>
+      </div>` : "";
+  const incomeHtml = gain > 0 ? `
+      <div class="confirm-sec">
+        <div class="confirm-sec-h">公司收入</div>
+        <div class="kv-mini">
+          <div class="k">汇益 · ${creditCcy}</div><div>${creditCcy} ${money(gain)}</div>
         </div>
       </div>` : "";
   return `<p class="note confirm-body" style="margin-top:0">${lead}</p>
@@ -3473,9 +3650,12 @@ function creditConfirmHtml({ lead, creditCcy, creditAmt, flowCcy, fee, fx, basis
         </div>
       </div>
       ${coverHtml}
+      ${incomeHtml}
     </div>${extra ? `<p class="note confirm-extra">${extra}</p>` : ""}`;
 }
 function openClaimOkConfirm() {
+  const t0 = txns.find(x => x.id === activeId);
+  if (claimDraft.step === 3 && t0 && claimExpectBlocked(t0)) return;
   const preview = previewClaimSubmit();
   if (!preview) return;
   const { t, feeRes, fxRes, credit } = preview;
@@ -3485,6 +3665,7 @@ function openClaimOkConfirm() {
     : money2(Number(t.amount) + (feeRes.on ? Number(feeRes.fee) || 0 : 0));
   const fee = feeRes.on ? Number(feeRes.fee) || 0 : 0;
   const fx = fxRes.on ? Number(fxRes.fx) || 0 : 0;
+  const gain = fxGainOf(fxRes);
   const expect = parseAmt(claimDraft.expectAmt);
   const flow = money2(t.amount);
   const extra = expect != null && expect < flow
@@ -3492,18 +3673,22 @@ function openClaimOkConfirm() {
     : (expect != null && expect > flow && fee === 0
       ? `期望入账 ${amtLabel(t.currency, expect)} 仅作记录，本笔按流水入账。`
       : "");
+  const lead = gain > 0
+    ? "请确认商户入账及公司收入后提交。汇益不计入商户入账。"
+    : (fee > 0 || fx > 0
+      ? "请确认商户入账及公司承担后提交。入账金额已含补足，请勿与公司承担加总。"
+      : "请确认商户入账金额后提交。本笔无公司承担。");
   openSubDialog({
     title: "确认认领",
     bodyHtml: creditConfirmHtml({
-      lead: fee > 0 || fx > 0
-        ? "请确认商户入账及公司承担后提交。入账金额已含补足，请勿与公司承担加总。"
-        : "请确认商户入账金额后提交。本笔无公司承担。",
+      lead,
       creditCcy,
       creditAmt,
       flowCcy: t.currency,
       fee,
       fx,
-      basis: creditBasisText({ same: !credit || credit.same, fee, fx, expect, flow }),
+      gain,
+      basis: creditBasisText({ same: !credit || credit.same, fee, fx, gain, expect, flow }),
       extra
     }),
     cancelText: "取消",
@@ -3531,6 +3716,7 @@ function submitBizClaim() {
   }
   t.companyFee = feeRes.on ? Number(feeRes.fee) || 0 : 0;
   t.fxLoss = fxRes.on ? Number(fxRes.fx) || 0 : 0;
+  t.fxGain = fxGainOf(fxRes);
   if (credit) {
     t.accountCcy = credit.dst;
     t.creditRate = credit.rate;
@@ -3546,12 +3732,14 @@ function submitBizClaim() {
     accountCcy: t.accountCcy || t.currency,
     creditAmt: t.creditAmt,
     companyFee: t.companyFee,
-    fxLoss: t.fxLoss
+    fxLoss: t.fxLoss,
+    fxGain: t.fxGain
   });
   closeMask();
   const bits = [`流水 ${t.currency} ${Number(t.amount).toFixed(2)}`];
   if (t.companyFee > 0) bits.push(`手续费补足 ${t.currency} ${t.companyFee.toFixed(2)}`);
   if (t.fxLoss > 0) bits.push(`汇损补足 ${t.accountCcy} ${t.fxLoss.toFixed(2)}`);
+  if (t.fxGain > 0) bits.push(`汇益（公司收入） ${t.accountCcy} ${t.fxGain.toFixed(2)}`);
   if (t.accountCcy && t.creditAmt != null && t.accountCcy !== t.currency) {
     bits.push(`最终入账 ${t.accountCcy} ${Number(t.creditAmt).toFixed(2)}`);
   }
@@ -3567,6 +3755,7 @@ function openRollbackModal(id) {
   }
   const fee = companyFeeOf(t);
   const fx = companyFxOf(t);
+  const gain = Number(t.fxGain) > 0 ? Number(t.fxGain) : 0;
   const accCcy = t.accountCcy || t.currency;
   const creditAmt = t.creditAmt != null ? Number(t.creditAmt) : Number(t.amount) + fee;
   $("mask").classList.add("show");
@@ -3584,6 +3773,7 @@ function openRollbackModal(id) {
           <div>流水金额：<span class="amt">${t.currency} ${Number(t.amount).toFixed(2)}</span></div>
           ${fee ? `<div>手续费补足：<span class="amt">${t.currency} ${fee.toFixed(2)}</span></div>` : `<div>手续费补足：无</div>`}
           ${fx ? `<div>汇损补足：<span class="amt">${accCcy} ${fx.toFixed(2)}</span></div>` : `<div>汇损补足：无</div>`}
+          ${gain ? `<div>汇益（原记公司收入，退回时冲回）：<span class="amt">${accCcy} ${gain.toFixed(2)}</span></div>` : ""}
           <div>最终入账 / 合计扣除：<span class="amt">${accCcy} ${Number(creditAmt).toFixed(2)}</span></div>
         </div>
       </div>
@@ -3604,6 +3794,7 @@ function openRollbackModal(id) {
     t.attachments = [];
     t.companyFee = 0;
     t.fxLoss = 0;
+    t.fxGain = 0;
     t.creditAmt = null;
     t.creditAuto = null;
     t.accountCcy = "";
@@ -3614,9 +3805,10 @@ function openRollbackModal(id) {
       fee && `手续费补足 ${t.currency} ${fee.toFixed(2)}`,
       fx && `汇损补足 ${accCcy} ${fx.toFixed(2)}`
     ].filter(Boolean);
-    toast(extra.length
+    const gainBit = gain ? `；原汇益 ${accCcy} ${gain.toFixed(2)} 已从公司收入冲回` : "";
+    toast((extra.length
       ? `已匹配退回，已从商户账户扣除最终入账 ${accCcy} ${Number(creditAmt).toFixed(2)}（含${extra.join("、")}）`
-      : `已匹配退回，已从商户账户扣除最终入账 ${accCcy} ${Number(creditAmt).toFixed(2)}`);
+      : `已匹配退回，已从商户账户扣除最终入账 ${accCcy} ${Number(creditAmt).toFixed(2)}`) + gainBit);
     render();
   };
 }
@@ -3673,10 +3865,10 @@ function renderSpec() {
       <ul>
         <li>收款明细「确认认领」与转账审核「确认匹配」都是入账动作，金额规则相同。同一条流水只能走其中一条，先提交的锁定，另一侧不可再提交。</li>
         <li>业务线 + 商户决定入账账户。商户与所选业务线不一致时提示，不自动改商户。</li>
-        <li>转账币种只读。与流水币种不一致时，返回上一步换流水或换审核单，不允许改审核单币种放行。</li>
-        <li>期望入账可改。高于流水且商户支持补足时进入入账确认；不支持或关闭公司承担时，按流水入账，期望仅作记录。</li>
-        <li>期望低于流水时仍按流水全额入账，差额不退不拆。若需部分入账，先拆分流水。</li>
-        <li>必须上传转账凭证；预填不代替凭证。该商户已有待匹配审核单时会提示，可去关联已有单，也可忽略并继续认领生成新单。</li>
+        <li>转账币种只读。与流水币种不一致时，换流水或换审核单，不允许改审核单币种放行。</li>
+        <li>期望入账可改。高于流水且商户支持补足时进入入账确认；商户不支持手续费补足时，必须先把期望入账改为不超过流水金额才能继续认领。关闭公司承担时，按流水入账，期望仅作记录。</li>
+        <li>期望入账不能低于流水。低于时必须先改到不低于流水金额，才能继续认领 / 匹配。</li>
+        <li>一键认领先填业务线和商户。第二步再选是否已创建转账审核单：已创建则转账币种、期望入账、凭证沿用该单；未创建再填写这三项。入账换算在审核单信息齐了之后展示。该商户已有待匹配单时会提示，可去关联，也可继续认领生成新单。</li>
         <li>确认后立即充值，无审批。一笔流水只能入账一次。纠错走匹配退回：按最终入账金额扣回（含当时的手续费补足、汇损补足），流水回到待认领并解锁。</li>
       </ul>
 
@@ -3684,20 +3876,21 @@ function renderSpec() {
       <ul>
         <li>手续费补足在流水币种发生：差额 = 期望入账金额 − 流水金额。转账币种必须等于流水币种，所以这一层不再记汇损。</li>
         <li>汇损补足在商户账户币种发生：差额 = 最终入账金额 − 自动换算金额。只在流水币种 ≠ 商户账户币种，且操作人把最终入账调高时出现。</li>
-        <li>两层各看商户白名单（手续费补足 / 汇损补足），与业务线无关。支持时开关默认打开；不支持则不可开。</li>
-        <li>手续费补足不得超过本笔流水金额的 4%；汇损补足不得超过自动换算金额的 1%。</li>
-        <li>认领 / 匹配成功：商户账户按最终入账金额入账。手续费补足、汇损补足均由公司承担，不能和入账金额加总。</li>
-        <li>匹配退回：按最终入账金额从商户账户扣除（含当时的手续费补足、汇损补足）。</li>
+        <li>汇益同样在商户账户币种发生：差额 = 自动换算金额 − 最终入账金额。只在跨币种且最终入账低于自动换算时出现。不看商户汇损白名单，记为公司收入，不从商户账户再扣。</li>
+        <li>两层各看商户白名单（手续费补足 / 汇损补足），与业务线无关。支持时开关默认打开；不支持则不可开。汇益无需开关。</li>
+        <li>手续费补足不得超过本笔流水金额的 4%；汇损补足不得超过自动换算金额的 1%。汇益暂不设上限。</li>
+        <li>认领 / 匹配成功：商户账户按最终入账金额入账。手续费补足、汇损补足均由公司承担，不能和入账金额加总。汇益记公司收入，同样不能和入账金额加总。</li>
+        <li>匹配退回：按最终入账金额从商户账户扣除（含当时的手续费补足、汇损补足）。原记公司收入的汇益一并冲回。</li>
       </ul>
 
       <h3>6. 入账确认</h3>
       <ul>
         <li>第 3 步在需要手续费补足，或流水币种 ≠ 商户账户币种时出现。等额跨币种也会进入本步，避免漏看汇率和汇损。</li>
-        <li>本步按两张卡片阅读：① 手续费补足（仅期望高于流水时）对照流水 / 期望 / 差额；② 入账换算展示入账基数 → 汇率 → 自动换算 → 最终入账。汇损开关只在最终入账高于自动换算时出现。</li>
+        <li>本步按两张卡片阅读：① 手续费补足（仅期望高于流水时）对照流水 / 期望 / 差额；② 入账换算展示入账基数 → 汇率 → 自动换算 → 最终入账。汇损开关只在最终入账高于自动换算时出现；低于自动换算时展示汇益（记公司收入）。</li>
         <li>入账基数 = 流水金额 + 手续费补足（如有）。</li>
-        <li>同币种：汇率 1，按入账基数原币入账，金额不可改，无汇损。</li>
-        <li>不同币种：打开本步时锁定 FUND 报价（一般 6 位小数）得到自动换算金额。操作人可二次输入最终入账金额，不得低于自动换算，也不得超过自动换算的 1%。公司只补不扣。</li>
-        <li>二次确认先展示「商户入账」。有手续费或汇损补足时才展示「公司承担」，并写清币种；无补足时不展示该公司承担块。</li>
+        <li>同币种：汇率 1，按入账基数原币入账，金额不可改，无汇损、无汇益。</li>
+        <li>不同币种：打开本步时锁定 FUND 报价（一般 6 位小数）得到自动换算金额。操作人可修改最终入账金额：高于自动换算时差额记为汇损补足（上限 1%）；低于自动换算时差额记为汇益、计入公司收入。</li>
+        <li>二次确认先展示「商户入账」。有手续费或汇损补足时才展示「公司承担」；有汇益时展示「公司收入」，并写清币种。</li>
         <li>演示：万里汇 3639（CNH，手续费+汇损）流水 a7 USD 1,860.00；与转账审核共用 PN-EQ-14300，用于入账锁定。</li>
       </ul>
 
@@ -3709,9 +3902,9 @@ function renderSpec() {
           <tr><td>SC-EQ-USD / TR-SC-EQ-USD</td><td>等额同币种，无补足</td><td>星辰 14229 USD</td><td>1,000 / 1,000 USD</td></tr>
           <tr><td>SC-EQ-FX / TR-SC-EQ-FX</td><td>等额跨币种，入账确认 / 汇损 1%</td><td>万里汇 3639 CNH</td><td>1,430 / 1,430 USD</td></tr>
           <tr><td>SC-FEE / TR-SC-FEE</td><td>手续费补足（未超 4%）</td><td>华贸 71008</td><td>1,400 / 1,450 USD</td></tr>
-          <tr><td>SC-FEE-OFF / TR-SC-FEE-OFF</td><td>不支持补足，按流水入账</td><td>星辰 14229</td><td>300 / 326.40 USD</td></tr>
+          <tr><td>SC-FEE-OFF / TR-SC-FEE-OFF</td><td>不支持补足，须改期望后认领</td><td>星辰 14229</td><td>300 / 326.40 USD</td></tr>
           <tr><td>SC-FEE-CAP / TR-SC-FEE-CAP</td><td>手续费超 4%</td><td>华贸 71008</td><td>50 / 80 USD</td></tr>
-          <tr><td>SC-LOW / TR-SC-LOW</td><td>期望低于流水，按流水全额</td><td>万里汇 3639</td><td>1,860 / 1,430 USD</td></tr>
+          <tr><td>SC-LOW / TR-SC-LOW</td><td>期望低于流水，须改期望后认领</td><td>万里汇 3639</td><td>1,860 / 1,430 USD</td></tr>
           <tr><td>SC-CCY / TR-SC-CCY</td><td>币种不一致（流水 EUR / 单 USD）</td><td>星辰 14229</td><td>EUR 326.40 / USD 326.40</td></tr>
           <tr><td>SC-FX-CAP / TR-SC-FX-CAP</td><td>仅汇损，试 1% 上限</td><td>迅达 88021 CNH</td><td>2,000 / 2,000 USD</td></tr>
           <tr><td>SC-DUP / TR-SC-DUP</td><td>未创建撞待匹配单</td><td>迅达 88021</td><td>450 / 450 USD</td></tr>

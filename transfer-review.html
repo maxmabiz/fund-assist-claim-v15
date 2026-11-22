@@ -705,7 +705,7 @@
       { code: "FEE", time: "2026-11-09 09:03:00", amount: 1400, merchantId: "71008", expect: 1450, biz: "履约", note: "手续费补足 50，未超 4%", payer: "HUAMAO SCENE FEE" },
       { code: "FEE-OFF", time: "2026-11-09 09:04:00", amount: 300, merchantId: "14229", expect: 326.4, biz: "广告", note: "商户不支持补足，按流水入账", payer: "STARLINK SCENE NOFEE" },
       { code: "FEE-CAP", time: "2026-11-09 09:05:00", amount: 50, merchantId: "71008", expect: 80, biz: "履约", note: "手续费超 4%", payer: "HUAMAO SCENE CAP" },
-      { code: "LOW", time: "2026-11-09 09:06:00", amount: 1860, merchantId: "3639", expect: 1430, biz: "履约", note: "期望低于流水，按流水全额", payer: "HANGZHOU RETAIL LOW" },
+      { code: "LOW", time: "2026-11-09 09:06:00", amount: 1860, merchantId: "3639", expect: 1430, biz: "履约", note: "期望低于流水，须改到不低于流水后才能匹配", payer: "HANGZHOU RETAIL LOW" },
       { code: "CCY", time: "2026-11-09 09:07:00", amount: 326.4, currency: "EUR", merchantId: "14229", expect: 326.4, orderCcy: "USD", biz: "广告", note: "流水 EUR / 审核单 USD，应换流水", payer: "EURO SCENE BUYER" },
       { code: "FX-CAP", time: "2026-11-09 09:08:00", amount: 2000, merchantId: "88021", expect: 2000, biz: "履约", note: "仅汇损，试 1% 上限", payer: "XUNDA SCENE FX" },
       { code: "DUP", time: "2026-11-09 09:09:00", amount: 450, merchantId: "88021", expect: 450, biz: "履约", note: "待匹配重复单", payer: "XUNDA SCENE DUP" },
@@ -1552,8 +1552,8 @@
       if (!st || st.same) return { on: false, fx: 0 };
       if (st.auto == null || st.amt == null) return live ? { pending: true } : { error: "请确认最终入账金额" };
       const diff = money2(st.amt - st.auto);
-      if (diff < 0) return { error: "最终入账金额不能低于自动换算金额", diff: diff };
-      if (diff === 0) return { on: false, fx: 0, diff: 0 };
+      if (diff < 0) return { on: false, fx: 0, gain: money2(-diff), diff: diff };
+      if (diff === 0) return { on: false, fx: 0, gain: 0, diff: 0 };
       const limit = fxCap(st.auto);
       if (diff > limit) return { error: "超出汇损最大比例 1%", diff: diff, limit: limit };
       if (!merchantFxOf(row.merchantId)) {
@@ -1567,8 +1567,9 @@
       return { on: true, fx: diff, diff: diff, limit: limit };
     }
     function matchFxNote(row, diff, on) {
-      if (!merchantFxOf(row.merchantId)) return "该商户不支持汇损补足。最终入账须等于自动换算金额。";
-      if (diff <= 0) return "按自动换算入账。若需公司承担汇损，请先提高最终入账金额（上限 1%）。汇率按打开本步时的 FUND 报价锁定。";
+      if (diff < 0) return "最终入账低于锁定报价换算结果。商户按最终入账金额入账，差额记为汇益，计入公司收入。";
+      if (!merchantFxOf(row.merchantId)) return "该商户不支持汇损补足。最终入账不得高于自动换算金额；调低则差额记为汇益、计入公司收入。";
+      if (diff <= 0) return "按自动换算入账。调高最终入账可走汇损补足（上限 1%）；调低则差额记为汇益、计入公司收入。汇率按打开本步时的 FUND 报价锁定。";
       if (on === false) return "已关闭公司承担。请将最终入账改回自动换算，或重新开启。";
       return "差额全部记为汇损补足，上限为自动换算金额的 1%。";
     }
@@ -1603,8 +1604,14 @@
           '</div><div class="k">汇损补足</div><div class="v amt" id="fxCalc">' + (fxRes && fxRes.on ? esc(moneyLabel(st.dst, fxRes.fx)) : "—") + "</div></div>" +
           '<p class="note" id="fxNote">' + esc(matchFxNote(row, fxDiff, fxOn)) + "</p>" +
           '<p class="fee-err" id="fxErr"' + (fxRes && fxRes.error ? "" : " hidden") + ">" + (fxRes && fxRes.error ? esc(fxRes.error) : "") + "</p></div>";
+      } else if (fxDiff < 0) {
+        const gain = money2(-fxDiff);
+        fxHtml = '<div class="fx-cover" id="fxBlock"><div class="fee-head"><div class="ttl">汇益</div></div>' +
+          '<div class="layer-kv"><div class="k">汇益差额</div><div class="v amt">' + esc(moneyLabel(st.dst, gain)) +
+          '</div><div class="k">计入公司收入</div><div class="v amt">' + esc(moneyLabel(st.dst, gain)) + "</div></div>" +
+          '<p class="note" id="fxNote">' + esc(matchFxNote(row, fxDiff)) + "</p></div>";
       } else {
-        fxHtml = '<p class="note" id="fxNote">' + esc(matchFxNote(row, 0)) + "</p>";
+        fxHtml = '<p class="note" id="fxNote">' + esc(matchFxNote(row, fxDiff)) + "</p>";
       }
       const path = st.same
         ? '<div class="credit-path same"><div><div class="k">入账基数</div><div class="v amt">' + esc(baseText) +
@@ -1634,6 +1641,23 @@
       const expect = matchExpect(row, dialog);
       if (expect == null || Number.isNaN(expect)) return false;
       return expect > money2(flow.net);
+    }
+    function matchExpectBelowFlow(row, flow, dialog) {
+      if (!flow || matchCcyMismatch(row, flow, dialog)) return false;
+      const expect = matchExpect(row, dialog);
+      if (expect == null || Number.isNaN(expect)) return false;
+      return expect < money2(flow.net);
+    }
+    function matchExpectBlocked(row, flow, dialog) {
+      if (matchExpectBelowFlow(row, flow, dialog)) {
+        showToast("期望入账不能低于流水金额，请先修改");
+        return true;
+      }
+      if (matchExpectOverFlow(row, flow, dialog) && !merchantCoverOf(row.merchantId).any) {
+        showToast("该商户不支持手续费补足，请先将期望入账改为不超过流水金额");
+        return true;
+      }
+      return false;
     }
     function matchNeedFeeStep(row, flow, dialog) {
       if (!matchExpectOverFlow(row, flow, dialog)) return false;
@@ -1711,9 +1735,9 @@
       } else if (diff > 0) {
         hint = cap.any
           ? '<p class="note gate-hint">期望入账高于流水，差额 ' + esc(moneyLabel(flow.currency, diff)) + "。下一步进行入账确认。</p>"
-          : '<div class="alert-box gate-hint">期望入账高于流水 ' + esc(moneyLabel(flow.currency, diff)) + "。该商户不支持手续费补足，本笔将按流水金额入账，期望入账仅作记录。</div>";
+          : '<div class="alert-box gate-hint">期望入账高于流水 ' + esc(moneyLabel(flow.currency, diff)) + "。该商户不支持手续费补足，请将期望入账改为不超过流水金额后，才能继续匹配。</div>";
       } else if (diff < 0) {
-        hint = '<div class="alert-box gate-hint">期望入账低于流水 ' + esc(moneyLabel(flow.currency, Math.abs(diff))) + "。本笔仍按流水金额全额入账，差额不退不拆。若需部分入账，请先拆分流水或联系财务。</div>";
+        hint = '<div class="alert-box gate-hint">期望入账低于流水 ' + esc(moneyLabel(flow.currency, Math.abs(diff))) + "。请将期望入账改为不低于流水金额后，才能继续匹配。</div>";
       } else if (matchNeedFxStep(row, flow, dialog)) {
         hint = '<p class="note gate-hint">期望入账等于流水，无需手续费补足。账户币种不同，下一步确认入账换算。</p>';
       } else {
@@ -2960,6 +2984,7 @@
           showToast("转账审核单币种与流水币种不一致，请返回上一步选择币种一致的收款流水");
           return;
         }
+        if (matchExpectBlocked(row, flow, dialog)) return;
         if (!validateDialog()) {
           renderOverlay();
           const target = document.getElementById("remark");
@@ -2995,18 +3020,11 @@
       const holder = document.createElement("div");
       holder.innerHTML = '<div class="mask sub" id="expect-mask"><div class="dialog narrow" style="width:min(420px,100%)" role="dialog">' +
         '<div class="dialog-hd"><h2>修改期望入账金额</h2><button type="button" class="icon-btn" data-act="close-expect" aria-label="关闭">' + ICONS.close + "</button></div>" +
-        '<div class="dialog-bd"><p class="note">当前 ' + esc(current == null ? "-" : moneyLabel(ccy, current)) + "。请输入新金额，并再输入一次确认。第二次不可粘贴。</p>" +
+        '<div class="dialog-bd"><p class="note">当前 ' + esc(current == null ? "-" : moneyLabel(ccy, current)) + "。请输入新金额。</p>" +
         '<div class="form-label"><i class="req">*</i>期望入账金额</div><div class="amount-input"><input id="expectAmt1" class="control" inputmode="decimal" placeholder="请输入期望入账金额"><span>' + esc(ccy) + "</span></div>" +
-        '<div class="form-label" style="margin-top:16px"><i class="req">*</i>再次输入</div><div class="amount-input"><input id="expectAmt2" class="control" inputmode="decimal" placeholder="请再次输入" autocomplete="off"><span>' + esc(ccy) + "</span></div>" +
         '<p class="form-err" id="expectDlgErr"></p></div>' +
         '<div class="dialog-ft"><button type="button" class="btn default" data-act="close-expect">取消</button><button type="button" class="btn primary" data-act="expect-ok">确定</button></div></div></div>';
       document.getElementById("overlay").appendChild(holder.firstElementChild);
-      const a2 = document.getElementById("expectAmt2");
-      const block = (e) => e.preventDefault();
-      if (a2) {
-        a2.addEventListener("paste", block);
-        a2.addEventListener("drop", block);
-      }
       const a1 = document.getElementById("expectAmt1");
       if (a1) setTimeout(() => a1.focus(), 0);
     }
@@ -3018,13 +3036,10 @@
 
     function submitMatchExpect() {
       const a1 = document.getElementById("expectAmt1");
-      const a2 = document.getElementById("expectAmt2");
       const err = document.getElementById("expectDlgErr");
       const n1 = parseAmt(a1 && a1.value);
-      const n2 = parseAmt(a2 && a2.value);
-      if (n1 == null || n2 == null) { err.textContent = "请输入两次期望入账金额"; return; }
-      if (Number.isNaN(n1) || Number.isNaN(n2) || n1 <= 0 || n2 <= 0) { err.textContent = "请输入大于 0 的金额"; return; }
-      if (n1 !== n2) { err.textContent = "两次输入不一致，请重新输入"; return; }
+      if (n1 == null) { err.textContent = "请输入期望入账金额"; return; }
+      if (Number.isNaN(n1) || n1 <= 0) { err.textContent = "请输入大于 0 的金额"; return; }
       state.dialog.expectAmt = n1.toFixed(2);
       closeMatchExpectDialog();
       renderOverlay();
@@ -3041,32 +3056,20 @@
       const holder = document.createElement("div");
       holder.innerHTML = '<div class="mask sub" id="credit-mask"><div class="dialog narrow" style="width:min(420px,100%)" role="dialog">' +
         '<div class="dialog-hd"><h2>修改最终入账金额</h2><button type="button" class="icon-btn" data-act="close-credit" aria-label="关闭">' + ICONS.close + "</button></div>" +
-        '<div class="dialog-bd"><p class="note">自动换算 ' + esc(moneyLabel(st.dst, st.auto)) + "。请输入最终希望入账的金额，并再输入一次确认。第二次不可粘贴。高于自动换算的差额记为汇损补足，不得超过自动换算的 1%。公司只补不扣。</p>" +
+        '<div class="dialog-bd"><p class="note">自动换算 ' + esc(moneyLabel(st.dst, st.auto)) + "。请输入最终希望入账的金额。高于自动换算：差额为汇损补足（上限 1%），由公司承担。低于自动换算：差额为汇益，记为公司收入。商户均按最终入账金额入账。</p>" +
         '<div class="form-label"><i class="req">*</i>最终入账金额</div><div class="amount-input"><input id="creditAmt1" class="control" inputmode="decimal" placeholder="请输入最终入账金额"><span>' + esc(st.dst) + "</span></div>" +
-        '<div class="form-label" style="margin-top:16px"><i class="req">*</i>再次输入</div><div class="amount-input"><input id="creditAmt2" class="control" inputmode="decimal" placeholder="请再次输入" autocomplete="off"><span>' + esc(st.dst) + "</span></div>" +
         '<p class="form-err" id="creditDlgErr"></p></div>' +
         '<div class="dialog-ft"><button type="button" class="btn default" data-act="close-credit">取消</button><button type="button" class="btn primary" data-act="credit-ok">确定</button></div></div></div>';
       document.getElementById("overlay").appendChild(holder.firstElementChild);
-      const a2 = document.getElementById("creditAmt2");
-      const block = (e) => e.preventDefault();
-      if (a2) {
-        a2.addEventListener("paste", block);
-        a2.addEventListener("drop", block);
-      }
       const a1 = document.getElementById("creditAmt1");
       if (a1) {
         a1.addEventListener("keydown", (event) => {
           if (event.key !== "Enter") return;
           event.preventDefault();
-          if (a2) a2.focus();
+          submitMatchCredit();
         });
         setTimeout(() => a1.focus(), 0);
       }
-      if (a2) a2.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter") return;
-        event.preventDefault();
-        submitMatchCredit();
-      });
     }
 
     function closeMatchCreditDialog() {
@@ -3080,17 +3083,11 @@
       const flow = selectedFlow();
       const st = matchCreditState(row, flow, dialog);
       const a1 = document.getElementById("creditAmt1");
-      const a2 = document.getElementById("creditAmt2");
       const err = document.getElementById("creditDlgErr");
       const n1 = parseAmt(a1 && a1.value);
-      const n2 = parseAmt(a2 && a2.value);
-      if (n1 == null || n2 == null) { err.textContent = "请输入两次最终入账金额"; return; }
-      if (Number.isNaN(n1) || Number.isNaN(n2) || n1 <= 0 || n2 <= 0) { err.textContent = "请输入大于 0 的金额"; return; }
-      if (n1 !== n2) { err.textContent = "两次输入不一致，请重新输入"; return; }
-      if (!st || st.auto == null || n1 < st.auto) {
-        err.textContent = "最终入账金额不能低于自动换算金额 " + (st && st.auto != null ? moneyLabel(st.dst, st.auto) : "");
-        return;
-      }
+      if (n1 == null) { err.textContent = "请输入最终入账金额"; return; }
+      if (Number.isNaN(n1) || n1 <= 0) { err.textContent = "请输入大于 0 的金额"; return; }
+      if (!st || st.auto == null) { err.textContent = "无法读取自动换算金额"; return; }
       const fxLimit = fxCap(st.auto);
       if (money2(n1 - st.auto) > fxLimit) {
         err.textContent = "超出汇损最大比例 1%，最高可入账 " + moneyLabel(st.dst, money2(st.auto + fxLimit));
@@ -3119,6 +3116,7 @@
         showToast("转账审核单币种与流水币种不一致，请返回上一步选择币种一致的收款流水");
         return null;
       }
+      if (matchExpectBlocked(row, flow, dialog)) return null;
       if (isFlowOccupied(flow) && row.flowId !== flow.id) {
         showToast("该流水已入账，不能再匹配");
         return null;
@@ -3148,8 +3146,15 @@
     function matchOkLine(label, value) {
       return '<div class="k">' + esc(label) + '</div><div class="v amt">' + esc(value) + "</div>";
     }
-    function matchBasisText(same, fee, fx, expect, flowAmt) {
+    function matchFxGainOf(fxRes) {
+      if (!fxRes) return 0;
+      if (Number(fxRes.gain) > 0) return Number(fxRes.gain);
+      if (typeof fxRes.diff === "number" && fxRes.diff < 0) return money2(-fxRes.diff);
+      return 0;
+    }
+    function matchBasisText(same, fee, fx, gain, expect, flowAmt) {
       if (fx > 0) return "含汇损补足";
+      if (gain > 0) return "含汇益（记公司收入）";
       if (fee > 0) return "流水 + 手续费补足";
       if (expect != null && expect < flowAmt) return "按流水全额入账";
       if (expect != null && expect > flowAmt && fee === 0) return "按流水入账（期望仅作记录）";
@@ -3171,20 +3176,27 @@
         : money2(flow.net + (cover.on ? Number(cover.fee) || 0 : 0));
       const fee = cover.on ? Number(cover.fee) || 0 : 0;
       const fx = fxRes.on ? Number(fxRes.fx) || 0 : 0;
+      const gain = matchFxGainOf(fxRes);
       const expect = matchExpect(row, dialog);
       const flowAmt = money2(flow.net);
       const extra = expect != null && expect < flowAmt
         ? "期望入账低于流水，已按流水全额入账。"
         : (expect != null && expect > flowAmt && fee === 0 ? "期望入账仅作记录，本笔按流水入账。" : "");
       const hasCover = fee > 0 || fx > 0;
-      const lead = hasCover
-        ? "请确认商户入账及公司承担后提交。入账金额已含补足，请勿与公司承担加总。"
-        : "请确认商户入账金额后提交。本笔无公司承担。";
+      const lead = gain > 0
+        ? "请确认商户入账及公司收入后提交。汇益不计入商户入账。"
+        : (hasCover
+          ? "请确认商户入账及公司承担后提交。入账金额已含补足，请勿与公司承担加总。"
+          : "请确认商户入账金额后提交。本笔无公司承担。");
       const coverHtml = hasCover
         ? '<div class="confirm-sec"><div class="confirm-sec-h">公司承担</div><div class="kv-mini">' +
           (fee > 0 ? '<div class="k">手续费补足 · ' + esc(flow.currency) + "</div><div>" + esc(moneyLabel(flow.currency, fee)) + "</div>" : "") +
           (fx > 0 ? '<div class="k">汇损补足 · ' + esc(creditCcy) + "</div><div>" + esc(moneyLabel(creditCcy, fx)) + "</div>" : "") +
           "</div></div>"
+        : "";
+      const incomeHtml = gain > 0
+        ? '<div class="confirm-sec"><div class="confirm-sec-h">公司收入</div><div class="kv-mini">' +
+          '<div class="k">汇益 · ' + esc(creditCcy) + "</div><div>" + esc(moneyLabel(creditCcy, gain)) + "</div></div></div>"
         : "";
       const old = document.getElementById("match-ok-mask");
       if (old) old.remove();
@@ -3194,8 +3206,8 @@
         '<div class="dialog-bd"><p class="note" style="margin-top:0">' + esc(lead) + "</p>" +
         '<div class="confirm-box"><div class="confirm-sec"><div class="confirm-sec-h">商户入账 · ' + esc(creditCcy) + "</div>" +
         '<div class="kv-mini">' + matchOkLine("入账金额", moneyLabel(creditCcy, creditAmt)) +
-        '<div class="k">口径</div><div>' + esc(matchBasisText(!credit || credit.same, fee, fx, expect, flowAmt)) + "</div></div></div>" +
-        coverHtml + "</div>" +
+        '<div class="k">口径</div><div>' + esc(matchBasisText(!credit || credit.same, fee, fx, gain, expect, flowAmt)) + "</div></div></div>" +
+        coverHtml + incomeHtml + "</div>" +
         (extra ? '<p class="note confirm-extra">' + esc(extra) + "</p>" : "") +
         "</div>" +
         '<div class="dialog-ft"><button type="button" class="btn default" data-act="close-match-ok">取消</button><button type="button" class="btn primary" data-act="match-ok-confirm">确认匹配</button></div></div></div>';
@@ -3228,6 +3240,7 @@
       row.flowTxn = flow.txn;
       row.companyFee = cover.on ? Number(cover.fee) || 0 : 0;
       row.fxLoss = fxRes.on ? Number(fxRes.fx) || 0 : 0;
+      row.fxGain = matchFxGainOf(fxRes);
       if (credit) {
         row.accountCcy = credit.dst;
         row.creditRate = credit.rate;
@@ -3244,6 +3257,9 @@
       if (row.fxLoss > 0) {
         remark = remark + (remark ? "；" : "") + "汇损补足 " + moneyLabel(row.accountCcy || flow.currency, row.fxLoss);
       }
+      if (row.fxGain > 0) {
+        remark = remark + (remark ? "；" : "") + "汇益（公司收入） " + moneyLabel(row.accountCcy || flow.currency, row.fxGain);
+      }
       row.matchRemark = remark;
       row.extraFiles = dialog.extraFiles.map((file) => ({ name: file.name, size: file.size }));
       row.auditAt = "";
@@ -3257,7 +3273,8 @@
         accountCcy: row.accountCcy || flow.currency,
         creditAmt: row.accountCreditAmt,
         companyFee: row.companyFee,
-        fxLoss: row.fxLoss
+        fxLoss: row.fxLoss,
+        fxGain: row.fxGain
       });
       showToast("已匹配并入账（演示）");
       closeDialog();
